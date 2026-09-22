@@ -8,6 +8,13 @@
       "when": 1790053690337,
       "tag": "0000_organic_power_man",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790057291045,
+      "tag": "0001_nervous_black_queen",
+      "breakpoints": true
     }
   ]
 }
