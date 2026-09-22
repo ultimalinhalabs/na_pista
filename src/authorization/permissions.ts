@@ -18,6 +18,10 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     "categories.create",
     "categories.update",
     "categories.delete",
+    "customers.read",
+    "customers.create",
+    "customers.update",
+    "customers.delete",
   ],
   ADMIN: [
     "products.read",
@@ -28,9 +32,23 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     "categories.create",
     "categories.update",
     "categories.delete",
+    "customers.read",
+    "customers.create",
+    "customers.update",
+    "customers.delete",
   ],
-  MANAGER: ["products.read", "products.create", "products.update", "categories.read", "categories.create", "categories.update"],
-  STAFF: ["products.read", "categories.read"],
+  MANAGER: [
+    "products.read",
+    "products.create",
+    "products.update",
+    "categories.read",
+    "categories.create",
+    "categories.update",
+    "customers.read",
+    "customers.create",
+    "customers.update",
+  ],
+  STAFF: ["products.read", "categories.read", "customers.read"],
 };
 
 export function roleHasPermission(roleKey: string, permission: string): boolean {
