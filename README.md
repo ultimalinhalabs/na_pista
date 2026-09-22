@@ -15,6 +15,12 @@ por API — não um ERP, POS, CRM nem software de loja/barbearia (esses são con
 (HTTP + Postgres reais), as decisões críticas de segurança que a F18 tinha deixado em aberto (OD-11, OD-12,
 OD-13, OD-14, OD-16). Não é o Product Module real — só o suficiente para validar o contrato antes de o construir.
 
+**F20 (Product Management, vertical slice real): COMPLETE — ver [`docs/f20-report.md`](docs/f20-report.md).**
+Primeiro módulo de negócio real: `src/` (Categories + Products), BD própria com migrations reais
+(`drizzle/migrations/`), autorização e entitlement a sério, audit e usage reais, 42/42 testes (unitários +
+integração + E2E, todos contra o Platform e o Postgres reais). UI própria em
+[`../na-pista-console`](../na-pista-console) (repositório irmão, ADR-008).
+
 ## Em duas linhas
 
 ```
@@ -25,7 +31,8 @@ NA PISTA    → "O que pode fazer?" (produtos, stock, pedidos, clientes | servi�
 - **Tenant** = a `Organization` do UL Platform (`organization_id` em toda linha de negócio).
 - **Taxonomia** = capacidades/módulos habilitados por entitlements, **não** um `business_type`.
 - **Repositório e BD independentes**; fala com o Platform só por API.
-- **Primeiro slice:** Product Management.
+- **Primeiro slice:** Product Management — **construído (F20)**: Categories + Products, tenant-scoped, com
+  autorização/entitlement/audit/usage reais. Ver [`docs/f20-report.md`](docs/f20-report.md).
 
 ## Mapa da documentação
 
@@ -49,14 +56,35 @@ NA PISTA    → "O que pode fazer?" (produtos, stock, pedidos, clientes | servi�
 | [`docs/integration-flow.md`](docs/integration-flow.md) | **F19** — fluxo humano e de serviço, ponta a ponta |
 | [`docs/platform-changes-required.md`](docs/platform-changes-required.md) | **F19** — alterações ao Platform identificadas, não implementadas |
 | [`docs/f19-report.md`](docs/f19-report.md) | **F19** — relatório final: estado, testes, matriz de segurança |
-| [`docs/adr/`](docs/adr/README.md) | ADR-001 … ADR-017 |
+| [`docs/api/products-api.md`](docs/api/products-api.md) | **F20** — contrato da API de Categories/Products |
+| [`docs/f20-report.md`](docs/f20-report.md) | **F20** — relatório final: domínio, API, BD, testes, limitações |
+| [`docs/adr/`](docs/adr/README.md) | ADR-001 … ADR-023 |
 | [`spikes/platform-integration/`](spikes/platform-integration/README.md) | **F19** — código do spike (removível), como correr os testes |
+| [`src/`](src) | **F20** — código real do Na Pista (Categories/Products), não removível |
 
 ## Convenções deste blueprint
 - **DECIDIDO** — decorre do conceito oficial, do CLAUDE.md ou do código do Platform.
 - **PROPOSTA** — recomendação técnica desta fase, reversível.
 - **OPEN DECISION (OD-nn)** — não pode ser determinada com segurança a partir do conceito; nunca tratada como fechada.
 - **PG-nn** lacuna do Platform · **DV-nn** divergência encontrada · **R-nn** risco.
+
+## A correr (F20)
+
+```bash
+npm install
+cp .env.example .env        # NA_PISTA_DATABASE_URL, PLATFORM_API_URL, ...
+npm run db:generate         # já gerado; só necessário após mudar src/db/schema/
+npm run db:migrate
+npm run dev                 # API em :4200
+
+# testes (precisam de um UL Platform real já a correr em :4000)
+npm run test:unit
+npm run test:integration    # precisa de NA_PISTA_DATABASE_URL real
+cd ../ul-platform && npm run f20:provision   # fixtures reais (F20_TEST_ORG_*)
+cd ../na-pista && npm run test:e2e
+```
+
+UI: ver [`../na-pista-console`](../na-pista-console).
 
 ## Fora de âmbito (F18)
 CRUDs, migrations definitivas, billing, pagamentos, integração com Micha Express, deploys, UI de cliente, app móvel,

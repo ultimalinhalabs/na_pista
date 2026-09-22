@@ -24,3 +24,9 @@ e [`../decisions.md`](../decisions.md) (F19 — todas fechadas com evidência de
 | [015](ADR-015-tenant-isolation-strategy.md) | Tenant Isolation Strategy (RLS) | Accepted — runtime-proven | F19 |
 | [016](ADR-016-service-scope-model.md) | Service Scope Model | Accepted — runtime-proven | F19 |
 | [017](ADR-017-failure-and-fail-closed-strategy.md) | Failure and Fail-Closed Strategy | Accepted — runtime-proven | F19 |
+| [018](ADR-018-product-domain-model.md) | Product Domain Model | Accepted — implemented | F20 |
+| [019](ADR-019-category-model.md) | Category Model | Accepted — implemented | F20 |
+| [020](ADR-020-product-lifecycle.md) | Product (and Category) Lifecycle | Accepted — implemented | F20 |
+| [021](ADR-021-tenant-scoped-repository.md) | Tenant-scoped Repository | Accepted — implemented | F20 |
+| [022](ADR-022-product-entitlement-enforcement.md) | Product Entitlement Enforcement | Accepted — implemented | F20 |
+| [023](ADR-023-product-audit-usage.md) | Product Audit / Usage | Accepted — implemented | F20 |
