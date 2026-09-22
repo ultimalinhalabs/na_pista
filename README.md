@@ -21,6 +21,12 @@ Primeiro módulo de negócio real: `src/` (Categories + Products), BD própria c
 integração + E2E, todos contra o Platform e o Postgres reais). UI própria em
 [`../na-pista-console`](../na-pista-console) (repositório irmão, ADR-008).
 
+**F21 (Customer Management, primitiva transversal): COMPLETE — ver [`docs/f21-report.md`](docs/f21-report.md).**
+Segundo módulo de negócio real: Customers, deliberadamente independente de Products/Categories e do User do
+Platform (ADR-025), pronto para futuros módulos de Commerce (`Customer → Order`) e Serviços
+(`Customer → Appointment`). 37/37 testes específicos de Customers; suite completa do `na-pista` (Customers +
+Products/Categories da F20, inalterados) em 79/79.
+
 ## Em duas linhas
 
 ```
@@ -33,6 +39,8 @@ NA PISTA    → "O que pode fazer?" (produtos, stock, pedidos, clientes | servi�
 - **Repositório e BD independentes**; fala com o Platform só por API.
 - **Primeiro slice:** Product Management — **construído (F20)**: Categories + Products, tenant-scoped, com
   autorização/entitlement/audit/usage reais. Ver [`docs/f20-report.md`](docs/f20-report.md).
+- **Segundo slice:** Customer Management — **construído (F21)**: primitiva transversal, sem acoplamento a
+  Products nem ao User do Platform. Ver [`docs/f21-report.md`](docs/f21-report.md).
 
 ## Mapa da documentação
 
@@ -58,9 +66,11 @@ NA PISTA    → "O que pode fazer?" (produtos, stock, pedidos, clientes | servi�
 | [`docs/f19-report.md`](docs/f19-report.md) | **F19** — relatório final: estado, testes, matriz de segurança |
 | [`docs/api/products-api.md`](docs/api/products-api.md) | **F20** — contrato da API de Categories/Products |
 | [`docs/f20-report.md`](docs/f20-report.md) | **F20** — relatório final: domínio, API, BD, testes, limitações |
-| [`docs/adr/`](docs/adr/README.md) | ADR-001 … ADR-023 |
+| [`docs/api/customers-api.md`](docs/api/customers-api.md) | **F21** — contrato da API de Customers |
+| [`docs/f21-report.md`](docs/f21-report.md) | **F21** — relatório final: domínio, API, BD, testes, limitações |
+| [`docs/adr/`](docs/adr/README.md) | ADR-001 … ADR-026 |
 | [`spikes/platform-integration/`](spikes/platform-integration/README.md) | **F19** — código do spike (removível), como correr os testes |
-| [`src/`](src) | **F20** — código real do Na Pista (Categories/Products), não removível |
+| [`src/`](src) | **F20/F21** — código real do Na Pista (Categories/Products/Customers), não removível |
 
 ## Convenções deste blueprint
 - **DECIDIDO** — decorre do conceito oficial, do CLAUDE.md ou do código do Platform.
@@ -68,7 +78,7 @@ NA PISTA    → "O que pode fazer?" (produtos, stock, pedidos, clientes | servi�
 - **OPEN DECISION (OD-nn)** — não pode ser determinada com segurança a partir do conceito; nunca tratada como fechada.
 - **PG-nn** lacuna do Platform · **DV-nn** divergência encontrada · **R-nn** risco.
 
-## A correr (F20)
+## A correr (F20/F21)
 
 ```bash
 npm install
@@ -80,7 +90,7 @@ npm run dev                 # API em :4200
 # testes (precisam de um UL Platform real já a correr em :4000)
 npm run test:unit
 npm run test:integration    # precisa de NA_PISTA_DATABASE_URL real
-cd ../ul-platform && npm run f20:provision   # fixtures reais (F20_TEST_ORG_*)
+cd ../ul-platform && npm run f20:provision && npm run f21:provision   # fixtures reais
 cd ../na-pista && npm run test:e2e
 ```
 

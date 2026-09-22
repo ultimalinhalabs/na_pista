@@ -30,3 +30,6 @@ e [`../decisions.md`](../decisions.md) (F19 — todas fechadas com evidência de
 | [021](ADR-021-tenant-scoped-repository.md) | Tenant-scoped Repository | Accepted — implemented | F20 |
 | [022](ADR-022-product-entitlement-enforcement.md) | Product Entitlement Enforcement | Accepted — implemented | F20 |
 | [023](ADR-023-product-audit-usage.md) | Product Audit / Usage | Accepted — implemented | F20 |
+| [024](ADR-024-customer-domain-model.md) | Customer Domain Model | Accepted — implemented | F21 |
+| [025](ADR-025-customer-identity-platform-user-separation.md) | Customer Identity / Platform User Separation | Accepted — implemented | F21 |
+| [026](ADR-026-customer-lifecycle.md) | Customer Lifecycle | Accepted — implemented | F21 |
