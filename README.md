@@ -8,9 +8,12 @@ por API — não um ERP, POS, CRM nem software de loja/barbearia (esses são con
 
 ## Estado
 
-**Fase F18 — arquitectura e definição de domínio. Não há código de aplicação.** Este repositório contém, por agora,
-apenas o blueprint técnico e funcional que servirá de contrato para a implementação. Estado da fase: **PARTIAL**
-(decisões abertas de segurança e de negócio — ver [`docs/f18-review.md`](docs/f18-review.md)).
+**F18 (arquitectura/domínio): PARTIAL** — blueprint técnico, sem código de produto (ver [`docs/f18-review.md`](docs/f18-review.md)).
+
+**F19 (integração Platform↔Na Pista): ver [`docs/f19-report.md`](docs/f19-report.md)** — spike removível em
+[`spikes/platform-integration/`](spikes/platform-integration/) que prova em runtime, contra o UL Platform real
+(HTTP + Postgres reais), as decisões críticas de segurança que a F18 tinha deixado em aberto (OD-11, OD-12,
+OD-13, OD-14, OD-16). Não é o Product Module real — só o suficiente para validar o contrato antes de o construir.
 
 ## Em duas linhas
 
@@ -42,7 +45,12 @@ NA PISTA    → "O que pode fazer?" (produtos, stock, pedidos, clientes | servi�
 | [`docs/ui-strategy.md`](docs/ui-strategy.md) | API vs Default UI vs Custom UI |
 | [`docs/vertical-slice.md`](docs/vertical-slice.md) | Slice 1, cenário E2E-alvo, backlog técnico |
 | [`docs/f18-review.md`](docs/f18-review.md) | Validação A/B/C, auto-revisão, **open decisions**, riscos |
-| [`docs/adr/`](docs/adr/README.md) | ADR-001 … ADR-010 |
+| [`docs/decisions.md`](docs/decisions.md) | **F19** — OD-11/12/13/14/16 fechadas, com evidência de runtime |
+| [`docs/integration-flow.md`](docs/integration-flow.md) | **F19** — fluxo humano e de serviço, ponta a ponta |
+| [`docs/platform-changes-required.md`](docs/platform-changes-required.md) | **F19** — alterações ao Platform identificadas, não implementadas |
+| [`docs/f19-report.md`](docs/f19-report.md) | **F19** — relatório final: estado, testes, matriz de segurança |
+| [`docs/adr/`](docs/adr/README.md) | ADR-001 … ADR-017 |
+| [`spikes/platform-integration/`](spikes/platform-integration/README.md) | **F19** — código do spike (removível), como correr os testes |
 
 ## Convenções deste blueprint
 - **DECIDIDO** — decorre do conceito oficial, do CLAUDE.md ou do código do Platform.
