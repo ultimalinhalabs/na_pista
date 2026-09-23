@@ -146,6 +146,13 @@ export class ServiceArchivedError extends AppError {
   }
 }
 
+/** F26 (ADR-040): availability cannot be computed, and no schedule mutation can be evaluated meaningfully, until the Organization has an explicit IANA timezone configured — fail closed, never a silent UTC/server/browser fallback (ADR-040 "no silent fallback"). */
+export class TimezoneNotConfiguredError extends AppError {
+  constructor(message = "This organization has no timezone configured; scheduling is unavailable until one is set") {
+    super(409, "TIMEZONE_NOT_CONFIGURED", message);
+  }
+}
+
 /**
  * Postgres unique_violation (23505) walked through drizzle-orm's
  * `DrizzleQueryError.cause` chain — same pattern ul-platform's own

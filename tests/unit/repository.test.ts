@@ -6,6 +6,8 @@ import * as inventoryRepo from "../../src/modules/inventory/repository.js";
 import * as orderRepo from "../../src/modules/orders/repository.js";
 import * as serviceRepo from "../../src/modules/services/repository.js";
 import * as professionalRepo from "../../src/modules/professionals/repository.js";
+import * as schedulingRepo from "../../src/modules/scheduling/repository.js";
+import * as organizationSettingsRepo from "../../src/modules/organizationSettings/repository.js";
 
 /**
  * F20 brief §13/§36: a repository function must never run without a
@@ -92,4 +94,30 @@ test("professional repository refuses to run without a TenantContext", async () 
   // @ts-expect-error deliberately calling with null to prove the guard
   await assert.rejects(() => professionalRepo.deleteAssociation(null, "professional-id", "service-id"), /TenantContext/);
   await assert.rejects(() => professionalRepo.listServicesForProfessional({ organizationId: "" }, "professional-id"), /TenantContext/);
+  // @ts-expect-error deliberately calling without a tenant to prove the guard
+  await assert.rejects(() => professionalRepo.getAssociation(undefined, "professional-id", "service-id"), /TenantContext/);
+});
+
+test("scheduling repository refuses to run without a TenantContext", async () => {
+  // @ts-expect-error deliberately calling without a tenant to prove the guard
+  await assert.rejects(() => schedulingRepo.listScheduleRules(undefined, "professional-id"), /TenantContext/);
+  // @ts-expect-error deliberately calling with null to prove the guard
+  await assert.rejects(() => schedulingRepo.replaceScheduleRules(null, "professional-id", []), /TenantContext/);
+  await assert.rejects(() => schedulingRepo.listScheduleExceptions({ organizationId: "" }, "professional-id"), /TenantContext/);
+  // @ts-expect-error deliberately calling without a tenant to prove the guard
+  await assert.rejects(() => schedulingRepo.listScheduleExceptionsInRange(undefined, "professional-id", "2026-01-01", "2026-01-31"), /TenantContext/);
+  // @ts-expect-error deliberately calling with null to prove the guard
+  await assert.rejects(() => schedulingRepo.insertScheduleException(null, "professional-id", { date: "2026-01-01" }), /TenantContext/);
+  await assert.rejects(() => schedulingRepo.deleteScheduleException({ organizationId: "" }, "professional-id", "exception-id"), /TenantContext/);
+  // @ts-expect-error deliberately calling without a tenant to prove the guard
+  await assert.rejects(() => schedulingRepo.hasClosedMarkerForDate(undefined, "professional-id", "2026-01-01"), /TenantContext/);
+  // @ts-expect-error deliberately calling with null to prove the guard
+  await assert.rejects(() => schedulingRepo.hasIntervalRowsForDate(null, "professional-id", "2026-01-01"), /TenantContext/);
+});
+
+test("organization settings repository refuses to run without a TenantContext", async () => {
+  // @ts-expect-error deliberately calling without a tenant to prove the guard
+  await assert.rejects(() => organizationSettingsRepo.getOrganizationSettings(undefined), /TenantContext/);
+  // @ts-expect-error deliberately calling with null to prove the guard
+  await assert.rejects(() => organizationSettingsRepo.upsertOrganizationSettings(null, "Africa/Luanda"), /TenantContext/);
 });

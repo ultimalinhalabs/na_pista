@@ -6,4 +6,7 @@ export * from "./orders.js";
 export * from "./services.js";
 export * from "./professionals.js";
 export * from "./professionalServices.js";
+export * from "./organizationSettings.js";
+export * from "./professionalScheduleRules.js";
+export * from "./professionalScheduleExceptions.js";
 export * from "./auditEvents.js";

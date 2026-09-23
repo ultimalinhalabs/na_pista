@@ -121,6 +121,25 @@ momento da escrita (leitura de disponibilidade é apenas indicativa, nunca uma g
 ADR-039..041. Zero alterações a `Service`/`Professional`/`professional_services`/UL Platform. UI não
 implementada nesta fase (spike puro).
 
+**F26 (Scheduling & Availability, vertical slice real — API/BD/UI): COMPLETE — ver [`docs/f26-report.md`](docs/f26-report.md).**
+Sétimo módulo de negócio real: implementa o contrato da F26A exactamente (ADR-039..041) — `organization_settings`
+(fuso horário IANA, nunca UTC/servidor/browser, falha fechado até estar configurado), `professional_schedule_rules`
+(regras semanais, múltiplos intervalos/dia, intervalos adjacentes aceites sem merge, overnight rejeitado por
+Zod E por `CHECK` real na BD), `professional_schedule_exceptions` (excepções substituem inteiramente a regra
+semanal nessa data — provado com o exemplo exacto do brief — nunca uma junção parcial). Motor de disponibilidade
+é uma função pura sem acesso a BD, testável isoladamente; `timezone` não entra no cálculo do motor (o modelo é
+wall-clock do início ao fim) — só serve para confirmar que a Organização já o configurou. Disponibilidade de
+trabalho é sempre devolvida; `serviceStartTimes` (incremento fixo de 15 min) só quando um `serviceId` é dado —
+nunca uma garantia de reserva (não existem Marcações nesta versão; F27 terá de revalidar no momento da escrita).
+`professional_services`/`Service.durationMinutes` lidos ao vivo, nunca duplicados. Permissões
+`scheduling.read/create/update` fundamentadas de forma própria (não copiadas). UI construída em
+`na-pista-console`: a agenda semanal/excepções/pré-visualização de disponibilidade estendem a própria página de
+detalhe do Profissional (não uma rota nova — Scheduling é propriedade de um Profissional, ADR-039), mais uma
+página nova de Definições para o fuso horário. 139 testes específicos de Scheduling (52 unitários + 36 integração
++ 32 E2E + 19 UI); suite completa do `na-pista` em 451/451 (dois flakes ambientais transitórios investigados e
+confirmados não relacionados com código, re-corridos isoladamente com sucesso — ver `docs/f26-report.md` §25).
+Zero alterações a `Service`/`Professional`/`professional_services`/UL Platform.
+
 ## Em duas linhas
 
 ```
@@ -183,9 +202,11 @@ NA PISTA    → "O que pode fazer?" (produtos, stock, pedidos, clientes | servi�
 | [`docs/api/professionals-api.md`](docs/api/professionals-api.md) | **F25** — contrato da API de Professionals (incluindo `professional_services`) |
 | [`docs/f25-report.md`](docs/f25-report.md) | **F25** — relatório final: modelo, API, BD, associação N:M, UI, testes, auto-revisão |
 | [`docs/f26a-report.md`](docs/f26a-report.md) | **F26A** — relatório final do spike: decisões de Scheduling/timezone/disponibilidade, alternativas, auto-revisão |
+| [`docs/api/scheduling-api.md`](docs/api/scheduling-api.md) | **F26** — contrato da API de Scheduling e Organization Settings |
+| [`docs/f26-report.md`](docs/f26-report.md) | **F26** — relatório final: modelo, BD, motor de disponibilidade, API, UI, testes, auto-revisão |
 | [`docs/adr/`](docs/adr/README.md) | ADR-001 … ADR-041 |
 | [`spikes/platform-integration/`](spikes/platform-integration/README.md) | **F19** — código do spike (removível), como correr os testes |
-| [`src/`](src) | **F20/F21/F22/F23/F24/F25** — código real do Na Pista (Categories/Products/Customers/Inventory/Orders/Services/Professionals), não removível |
+| [`src/`](src) | **F20/F21/F22/F23/F24/F25/F26** — código real do Na Pista (Categories/Products/Customers/Inventory/Orders/Services/Professionals/Scheduling), não removível |
 
 ## Convenções deste blueprint
 - **DECIDIDO** — decorre do conceito oficial, do CLAUDE.md ou do código do Platform.
@@ -193,7 +214,7 @@ NA PISTA    → "O que pode fazer?" (produtos, stock, pedidos, clientes | servi�
 - **OPEN DECISION (OD-nn)** — não pode ser determinada com segurança a partir do conceito; nunca tratada como fechada.
 - **PG-nn** lacuna do Platform · **DV-nn** divergência encontrada · **R-nn** risco.
 
-## A correr (F20/F21/F22/F23/F24/F25)
+## A correr (F20/F21/F22/F23/F24/F25/F26)
 
 ```bash
 npm install
@@ -205,7 +226,7 @@ npm run dev                 # API em :4200
 # testes (precisam de um UL Platform real já a correr em :4000)
 npm run test:unit
 npm run test:integration    # precisa de NA_PISTA_DATABASE_URL real
-cd ../ul-platform && npm run f20:provision && npm run f21:provision && npm run f22:provision && npm run f23:provision && npm run f24:provision && npm run f25:provision   # fixtures reais
+cd ../ul-platform && npm run f20:provision && npm run f21:provision && npm run f22:provision && npm run f23:provision && npm run f24:provision && npm run f25:provision && npm run f26:provision   # fixtures reais
 cd ../na-pista && npm run test:e2e
 ```
 

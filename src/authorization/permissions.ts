@@ -46,6 +46,24 @@
  * and its closely-related sub-resource). No `professionals.delete` —
  * reasoned independently for Professional (not copied from Service),
  * same conclusion: no demonstrated need for a stricter tier.
+ *
+ * F26 (ADR-039, docs/f26-report.md §14): `scheduling.create` gates
+ * `POST .../schedule/exceptions` (the one real "create a new row" verb
+ * in this domain); `scheduling.update` gates every other Scheduling
+ * mutation — `PUT .../schedule` (whole-set replace of an already-
+ * existing, possibly-empty schedule, so "update" not "create"; ADR-039
+ * D31: no separate schedule lifecycle exists to "create"),
+ * `DELETE .../schedule/exceptions/:id`, AND `organization_settings`
+ * (timezone) updates — reused for settings rather than inventing a
+ * dedicated `organization_settings.*` namespace, since settings exists
+ * solely to support Scheduling today. Reasoned independently for
+ * Scheduling (not copied from Professional without justification):
+ * every mutation here is structurally "configure this Professional's
+ * own operational data," with no distinct classes of action the way
+ * Inventory's RECEIPT-vs-ADJUSTMENT split has, so a two-tier create/
+ * update split (matching Professional's own shape) is justified, not
+ * just copied. No `scheduling.delete` — removal is gated by
+ * `scheduling.update`, never a separate lifecycle tier.
  */
 export const ROLE_PERMISSIONS: Record<string, string[]> = {
   OWNER: [
@@ -73,6 +91,9 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     "professionals.read",
     "professionals.create",
     "professionals.update",
+    "scheduling.read",
+    "scheduling.create",
+    "scheduling.update",
   ],
   ADMIN: [
     "products.read",
@@ -99,6 +120,9 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     "professionals.read",
     "professionals.create",
     "professionals.update",
+    "scheduling.read",
+    "scheduling.create",
+    "scheduling.update",
   ],
   MANAGER: [
     "products.read",
@@ -122,8 +146,20 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     "professionals.read",
     "professionals.create",
     "professionals.update",
+    "scheduling.read",
+    "scheduling.create",
+    "scheduling.update",
   ],
-  STAFF: ["products.read", "categories.read", "customers.read", "inventory.read", "orders.read", "services.read", "professionals.read"],
+  STAFF: [
+    "products.read",
+    "categories.read",
+    "customers.read",
+    "inventory.read",
+    "orders.read",
+    "services.read",
+    "professionals.read",
+    "scheduling.read",
+  ],
 };
 
 export function roleHasPermission(roleKey: string, permission: string): boolean {

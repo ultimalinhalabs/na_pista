@@ -92,6 +92,23 @@ export async function updateProfessional(
   return row;
 }
 
+/** F26: read-only existence check, reused cross-module by Scheduling's availability engine (ADR-039 D12 — never duplicates this relationship, always reads it live) — the exact same cross-module read pattern `getService` already establishes. */
+export async function getAssociation(tenant: TenantContext, professionalId: string, serviceId: string, executor: Executor = db) {
+  assertTenant(tenant);
+  const [row] = await executor
+    .select()
+    .from(professionalServices)
+    .where(
+      and(
+        eq(professionalServices.organizationId, tenant.organizationId),
+        eq(professionalServices.professionalId, professionalId),
+        eq(professionalServices.serviceId, serviceId),
+      ),
+    )
+    .limit(1);
+  return row;
+}
+
 /**
  * ADR-037: a plain insert — duplicate-prevention is the database's own
  * `UNIQUE(organization_id, professional_id, service_id)` constraint,
