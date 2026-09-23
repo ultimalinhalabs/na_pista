@@ -105,6 +105,22 @@ Professionals, não scope creep. Testes unitários/integração/E2E do `na-pista
 de componente do `na-pista-console` (Vitest + React Testing Library, convenção nova desta fase — ver
 `docs/f25-report.md` "UI tests").
 
+**F26A (decisões de domínio de Scheduling & Availability): COMPLETE — ver [`docs/f26a-report.md`](docs/f26a-report.md).**
+Decision spike — **sem** Scheduling/Appointment implementados. Corrige uma lacuna real encontrada por
+inspecção directa: a F18 assumia `TenantSettings.timezone`, que **não existe** em `ul-platform` (nem
+`TenantSettings` nem qualquer campo de timezone em `organizations`) — decisão fechada: o fuso horário passa a
+ser propriedade do próprio Na Pista (`organization_settings`, tabela nova, própria), nunca do UL Platform.
+Scheduling é `Professional`-cêntrico (não `Service`-cêntrico), duas tabelas aditivas
+(`professional_schedule_rules`, `professional_schedule_exceptions`), regras semanais + excepções por data
+(a excepção substitui inteiramente a regra semanal nesse dia, nunca um merge parcial), sem entidade `Break`
+(intervalos múltiplos já bastam), sem slots pré-gerados (disponibilidade sempre calculada, nunca armazenada —
+valida a proposta original da F18 em vez de a copiar cegamente), sem buffers/localizações/recursos/horário de
+organização nesta fase (cada um com caminho de extensão aditivo documentado). Fronteira Scheduling/Appointment
+fechada: Scheduling nunca contém Customer nem estado de reserva; F27 terá de revalidar disponibilidade no
+momento da escrita (leitura de disponibilidade é apenas indicativa, nunca uma garantia transaccional).
+ADR-039..041. Zero alterações a `Service`/`Professional`/`professional_services`/UL Platform. UI não
+implementada nesta fase (spike puro).
+
 ## Em duas linhas
 
 ```
@@ -166,7 +182,8 @@ NA PISTA    → "O que pode fazer?" (produtos, stock, pedidos, clientes | servi�
 | [`docs/f25a-report.md`](docs/f25a-report.md) | **F25A** — relatório final do spike: decisões, alternativas, auto-revisão |
 | [`docs/api/professionals-api.md`](docs/api/professionals-api.md) | **F25** — contrato da API de Professionals (incluindo `professional_services`) |
 | [`docs/f25-report.md`](docs/f25-report.md) | **F25** — relatório final: modelo, API, BD, associação N:M, UI, testes, auto-revisão |
-| [`docs/adr/`](docs/adr/README.md) | ADR-001 … ADR-038 |
+| [`docs/f26a-report.md`](docs/f26a-report.md) | **F26A** — relatório final do spike: decisões de Scheduling/timezone/disponibilidade, alternativas, auto-revisão |
+| [`docs/adr/`](docs/adr/README.md) | ADR-001 … ADR-041 |
 | [`spikes/platform-integration/`](spikes/platform-integration/README.md) | **F19** — código do spike (removível), como correr os testes |
 | [`src/`](src) | **F20/F21/F22/F23/F24/F25** — código real do Na Pista (Categories/Products/Customers/Inventory/Orders/Services/Professionals), não removível |
 

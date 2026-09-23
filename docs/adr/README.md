@@ -45,3 +45,6 @@ e [`../decisions.md`](../decisions.md) (F19 — todas fechadas com evidência de
 | [036](ADR-036-professional-domain-model.md) | Professional Domain Model | Accepted — implemented (F25) | F25A |
 | [037](ADR-037-professional-service-relationship.md) | Professional-Service Relationship (`professional_services`) | Accepted — implemented (F25) | F25A |
 | [038](ADR-038-professional-scheduling-appointment-boundary.md) | Professional / Scheduling / Appointment / Auth Boundary | Accepted — implemented (F25) | F25A |
+| [039](ADR-039-scheduling-domain-model.md) | Scheduling Domain Model | Accepted — spike, not yet implemented | F26A |
+| [040](ADR-040-time-timezone-availability-semantics.md) | Time, Timezone & Availability Semantics | Accepted — spike, not yet implemented | F26A |
+| [041](ADR-041-scheduling-appointment-boundary.md) | Scheduling / Appointment Boundary | Accepted — spike, not yet implemented | F26A |
