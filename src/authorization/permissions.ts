@@ -7,6 +7,14 @@
  * delete — gated the same as any other mutation, one tier stricter than
  * plain write (OWNER/ADMIN only, matching organization.delete's posture
  * in the Platform's own seed).
+ *
+ * F22 (ADR-028): `inventory.create` gates RECEIPT (the movement that can
+ * bring a new balance into existence); `inventory.update` gates
+ * ADJUSTMENT_IN/ADJUSTMENT_OUT. There is deliberately no
+ * `inventory.delete` — no lifecycle operation exists to delete/archive
+ * an inventory balance in this slice (F22 brief §19: "do not expose
+ * inventory.delete merely because the permission naming convention
+ * suggests it").
  */
 export const ROLE_PERMISSIONS: Record<string, string[]> = {
   OWNER: [
@@ -22,6 +30,9 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     "customers.create",
     "customers.update",
     "customers.delete",
+    "inventory.read",
+    "inventory.create",
+    "inventory.update",
   ],
   ADMIN: [
     "products.read",
@@ -36,6 +47,9 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     "customers.create",
     "customers.update",
     "customers.delete",
+    "inventory.read",
+    "inventory.create",
+    "inventory.update",
   ],
   MANAGER: [
     "products.read",
@@ -47,8 +61,11 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     "customers.read",
     "customers.create",
     "customers.update",
+    "inventory.read",
+    "inventory.create",
+    "inventory.update",
   ],
-  STAFF: ["products.read", "categories.read", "customers.read"],
+  STAFF: ["products.read", "categories.read", "customers.read", "inventory.read"],
 };
 
 export function roleHasPermission(roleKey: string, permission: string): boolean {
