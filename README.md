@@ -77,6 +77,18 @@ Inventory/Customers/Products/Categories das fases anteriores, inalterados) em 25
 nesta fase** — o próprio brief da F24 proibiu explicitamente alterar `na-pista-console` e restringiu o
 trabalho ao repositório `na-pista`; decisão documentada, não escondida, em `docs/f24-report.md`.
 
+**F25A (decisões de domínio de Professionals): COMPLETE — ver [`docs/f25a-report.md`](docs/f25a-report.md).**
+Decision spike — **sem** Professional/`professional_services` implementados. Fecha o modelo mínimo de
+Professional (não é User, não é Customer, não é clone de Product/Service — `name`/`description?`/`phone?`/
+`email?`/`status`, sem `userId`), e a decisão central: a relação Professional↔Service é uma tabela de junção
+N:M própria (`professional_services`), tenant-safe por duas FKs compostas (o mesmo mecanismo já provado por
+`order_items`), nunca uma FK directa em nenhum dos dois lados. Lifecycle via `PATCH { status }`, sem
+`professionals.delete` (mesma razão da F24, agora fundamentada de forma própria para Professional).
+`na-pista-console` é confirmado explicitamente como a UI oficial futura — resolvendo a tensão que o próprio
+relatório da F24 tinha assinalado — mas a UI não é construída nesta fase. ADR-036..038. Pacote de decisão
+completo em [`docs/f25a-professionals-decisions.md`](docs/f25a-professionals-decisions.md) — a F25 pode
+implementar Professionals sem tomar nenhuma decisão de domínio nova.
+
 ## Em duas linhas
 
 ```
@@ -134,7 +146,9 @@ NA PISTA    → "O que pode fazer?" (produtos, stock, pedidos, clientes | servi�
 | [`docs/f24a-report.md`](docs/f24a-report.md) | **F24A** — relatório final do spike: decisões, alternativas, auto-revisão |
 | [`docs/api/services-api.md`](docs/api/services-api.md) | **F24** — contrato da API de Services |
 | [`docs/f24-report.md`](docs/f24-report.md) | **F24** — relatório final: modelo, API, BD, testes, auto-revisão, decisão de escopo de UI |
-| [`docs/adr/`](docs/adr/README.md) | ADR-001 … ADR-035 |
+| [`docs/f25a-professionals-decisions.md`](docs/f25a-professionals-decisions.md) | **F25A** — pacote de decisões do domínio de Professionals, contrato para a F25 |
+| [`docs/f25a-report.md`](docs/f25a-report.md) | **F25A** — relatório final do spike: decisões, alternativas, auto-revisão |
+| [`docs/adr/`](docs/adr/README.md) | ADR-001 … ADR-038 |
 | [`spikes/platform-integration/`](spikes/platform-integration/README.md) | **F19** — código do spike (removível), como correr os testes |
 | [`src/`](src) | **F20/F21/F22/F23/F24** — código real do Na Pista (Categories/Products/Customers/Inventory/Orders/Services), não removível |
 
