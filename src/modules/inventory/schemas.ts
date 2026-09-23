@@ -11,8 +11,14 @@ import { z } from "zod";
  * Postgres. Rejects NaN, Infinity, zero, negative input (direction comes
  * from `type`, never from sign — F22 brief §11), and precision/magnitude
  * that would not fit `numeric(20,6)` (14 integer digits, 6 decimal).
+ *
+ * The magnitude check counts digits on the normalized STRING rather than
+ * comparing against a float literal constant — a 20-significant-digit
+ * value like `numeric(20,6)`'s own ceiling cannot be represented exactly
+ * by a JS double in the first place (it would silently round), so a
+ * float-literal bound would be both imprecise and misleading.
  */
-const MAX_QUANTITY = 999_999_999_999.999999; // 14 integer digits, 6 decimal — numeric(20,6)'s ceiling
+const MAX_INTEGER_DIGITS = 14; // numeric(20,6): 20 total significant digits, 6 of them after the decimal point
 
 const quantitySchema = z
   .union([z.number(), z.string()])
@@ -26,12 +32,14 @@ const quantitySchema = z
       ctx.addIssue({ code: "custom", message: "quantity must be a positive, non-zero number — direction comes from the movement type, never a negative quantity" });
       return z.NEVER;
     }
-    if (num > MAX_QUANTITY) {
-      ctx.addIssue({ code: "custom", message: `quantity exceeds the maximum representable value (${MAX_QUANTITY})` });
+    // Normalize to a fixed 6-decimal string — never let a JS double reach Postgres directly.
+    const fixed = num.toFixed(6);
+    const integerDigits = fixed.split(".")[0]!.length;
+    if (integerDigits > MAX_INTEGER_DIGITS) {
+      ctx.addIssue({ code: "custom", message: `quantity exceeds the maximum representable value for numeric(20,6) (${MAX_INTEGER_DIGITS} integer digits)` });
       return z.NEVER;
     }
-    // Normalize to a fixed 6-decimal string — never let a JS double reach Postgres directly.
-    return num.toFixed(6);
+    return fixed;
   });
 
 export const createMovementSchema = z

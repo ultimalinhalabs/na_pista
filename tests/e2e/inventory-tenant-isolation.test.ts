@@ -35,7 +35,7 @@ test("organization A cannot see, read, or record movements against organization 
   assert.equal(movementAsA.status, 403);
 
   const listAsA = await call(ctx.base, "GET", `/organizations/${fixtures.orgA.id}/inventory`, { token: fixtures.orgA.ownerToken });
-  assert.ok(!listAsA.data.some((b: any) => b.productId === productB.id));
+  assert.ok(!listAsA.data.some((b: { productId: string }) => b.productId === productB.id));
 });
 
 test("productId manipulation: an org-B product id used on org A's own path (real membership, wrong resource) resolves 404 PRODUCT_NOT_FOUND, never the row", async () => {

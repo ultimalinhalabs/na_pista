@@ -40,5 +40,5 @@ test("archiving a product blocks new inventory movements but keeps its balance/h
   assert.equal(movements.data.length, 1, "history is preserved; the blocked attempt inserted nothing");
 
   const list = await call(ctx.base, "GET", `/organizations/${fixtures.orgA.id}/inventory`, { token: fixtures.orgA.ownerToken });
-  assert.ok(list.data.some((b: any) => b.productId === product.id), "archived-product balances still appear in the tenant's inventory list");
+  assert.ok(list.data.some((b: { productId: string }) => b.productId === product.id), "archived-product balances still appear in the tenant's inventory list");
 });

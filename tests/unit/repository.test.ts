@@ -36,8 +36,9 @@ test("inventory repository refuses to run without a TenantContext", async () => 
   // @ts-expect-error deliberately calling with an empty object to prove the guard
   await assert.rejects(() => inventoryRepo.increaseBalance({}, "product-id", "1.000000"), /TenantContext/);
   await assert.rejects(() => inventoryRepo.decreaseBalance({ organizationId: "" }, "product-id", "1.000000"), /TenantContext/);
+  const movementStub = { inventoryId: "inv-id", productId: "product-id", type: "RECEIPT" as const, quantity: "1.000000", actorType: "user" as const, actorId: "actor-id" };
   // @ts-expect-error deliberately calling without a tenant to prove the guard
-  await assert.rejects(() => inventoryRepo.insertMovement(undefined, {} as any), /TenantContext/);
+  await assert.rejects(() => inventoryRepo.insertMovement(undefined, movementStub), /TenantContext/);
   // @ts-expect-error deliberately calling with null to prove the guard
   await assert.rejects(() => inventoryRepo.listMovements(null, "product-id", { limit: 10 }), /TenantContext/);
 });

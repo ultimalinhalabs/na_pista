@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import test, { after } from "node:test";
-import { and, eq } from "drizzle-orm";
 import { db, queryClient } from "../../src/db/index.js";
 import { inventoryBalances, stockMovements } from "../../src/db/schema/index.js";
 import { insertProduct, updateProduct } from "../../src/modules/products/repository.js";

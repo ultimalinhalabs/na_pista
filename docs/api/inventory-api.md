@@ -53,7 +53,7 @@ The only inventory write in this slice. Every quantity change is provably a move
     a decimal string; always normalized to a fixed 6-decimal string before reaching Postgres
     (`numeric(20,6)`, mirroring `ul-platform`'s own `usage_events.quantity` convention). Zero, negative,
     `NaN`, `Infinity`, and anything beyond `numeric(20,6)`'s representable range (14 integer digits, 6
-    decimal — `999999999999.999999`) are rejected with `400 VALIDATION_ERROR`.
+    decimal — `99999999999999.999999`) are rejected with `400 VALIDATION_ERROR`.
 - **Response `201`:** `{ balance: InventoryBalance, movement: StockMovement }` — both reflect the
   post-transaction state.
 - **Errors:**

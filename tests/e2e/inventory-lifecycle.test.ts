@@ -57,13 +57,13 @@ test("RECEIPT creates the balance, ADJUSTMENT_IN/OUT change it, GET reflects the
   assert.equal(movements.status, 200);
   assert.equal(movements.data.length, 3);
   assert.deepEqual(
-    movements.data.map((m: any) => m.type),
+    movements.data.map((m: { type: string }) => m.type),
     ["ADJUSTMENT_OUT", "ADJUSTMENT_IN", "RECEIPT"], // newest first
   );
 
   const list = await call(ctx.base, "GET", `/organizations/${fixtures.orgA.id}/inventory`, { token: fixtures.orgA.ownerToken });
   assert.equal(list.status, 200);
-  assert.ok(list.data.some((b: any) => b.productId === product.id));
+  assert.ok(list.data.some((b: { productId: string }) => b.productId === product.id));
 });
 
 test("ADJUSTMENT_OUT beyond available stock returns 409 INSUFFICIENT_STOCK over HTTP, balance unchanged", async () => {
