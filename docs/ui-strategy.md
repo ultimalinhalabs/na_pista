@@ -1,5 +1,11 @@
 # Estratégia de UI (ADR-008)
 
+> **Identidade visual (obrigatória, desde 2026-09):** a Default UI (`na-pista-console`) segue a marca Na Pista
+> — *"Na Pista — Ideias em Operação"* — descrita e normatizada em
+> [`na-pista-console/DESIGN.md`](../../na-pista-console/DESIGN.md). É um requisito de produto: todo módulo
+> novo (Inventory, Orders, Services, ...) reutiliza os tokens/componentes definidos ali, nunca cria uma
+> paleta própria. O Na Pista tem identidade visual própria, distinta da Última Linha (marca do ecossistema).
+
 ## 1. Três coisas separadas
 
 ```
