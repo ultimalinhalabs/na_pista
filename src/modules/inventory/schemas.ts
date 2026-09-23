@@ -17,10 +17,16 @@ import { z } from "zod";
  * value like `numeric(20,6)`'s own ceiling cannot be represented exactly
  * by a JS double in the first place (it would silently round), so a
  * float-literal bound would be both imprecise and misleading.
+ *
+ * Exported (F23, ADR-032/F23A §8): `OrderItem.quantity` deliberately
+ * reuses this exact same representation/validation rather than a parallel
+ * one — a future StockMovement created at Order confirmation consumes an
+ * OrderItem's quantity directly, so the two must never disagree on
+ * precision/shape.
  */
 const MAX_INTEGER_DIGITS = 14; // numeric(20,6): 20 total significant digits, 6 of them after the decimal point
 
-const quantitySchema = z
+export const quantitySchema = z
   .union([z.number(), z.string()])
   .transform((value, ctx) => {
     const num = typeof value === "string" ? Number(value) : value;

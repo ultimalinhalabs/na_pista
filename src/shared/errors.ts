@@ -82,10 +82,53 @@ export class InsufficientStockError extends AppError {
   }
 }
 
-/** F22 brief §22: a new inventory movement was attempted against an ARCHIVED product. */
+/** F22 brief §22: a new inventory movement was attempted against an ARCHIVED product. Reused unchanged by F23 Orders (ADR-032/F23 brief §36) — an archived product can never be added to a new DRAFT Order, and confirmation of a DRAFT Order whose product was archived in the meantime fails with this same error, for free, via `createMovement`. */
 export class ProductArchivedError extends AppError {
   constructor(message = "This product is archived; new inventory movements are not allowed") {
     super(409, "PRODUCT_ARCHIVED", message);
+  }
+}
+
+/** F23 (ADR-031): Product.price is NULL — a product without a price cannot be added to an Order. Distinct from ProductNotFoundError/ProductArchivedError so a client can tell "exists, sellable, but unpriced" apart from those. */
+export class ProductPriceRequiredError extends AppError {
+  constructor(message = "This product has no price set; it cannot be added to an Order") {
+    super(409, "PRODUCT_PRICE_REQUIRED", message);
+  }
+}
+
+/** F23 brief §37: a new Order (or a DRAFT Order's customer change) may not select an archived Customer. Historical Orders that already reference one remain valid — this error only fires on the write path that assigns a customer. */
+export class CustomerArchivedError extends AppError {
+  constructor(message = "This customer is archived; it cannot be assigned to a new Order") {
+    super(409, "CUSTOMER_ARCHIVED", message);
+  }
+}
+
+/** F23: the Order referenced does not exist in this tenant. */
+export class OrderNotFoundError extends AppError {
+  constructor(message = "Order not found") {
+    super(404, "ORDER_NOT_FOUND", message);
+  }
+}
+
+/**
+ * F23 (ADR-032): a lifecycle operation was attempted from a state that does
+ * not allow it — e.g. confirming an already-CONFIRMED/terminal Order,
+ * editing a non-DRAFT Order, completing a non-CONFIRMED Order. Also the
+ * guard a second, racing lifecycle request lands on (F23 brief §22/§44):
+ * the underlying transition is a single atomic conditional statement, so a
+ * duplicate/concurrent request that loses the race gets this error, never
+ * a silent no-op and never a double-applied side effect.
+ */
+export class InvalidOrderStateError extends AppError {
+  constructor(message = "This operation is not valid for the Order's current state") {
+    super(409, "INVALID_ORDER_STATE", message);
+  }
+}
+
+/** F23 brief §17: an Order with no items cannot be confirmed. */
+export class EmptyOrderError extends AppError {
+  constructor(message = "An Order with no items cannot be confirmed") {
+    super(409, "EMPTY_ORDER", message);
   }
 }
 

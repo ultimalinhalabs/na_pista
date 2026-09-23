@@ -29,7 +29,7 @@ export async function createProduct(
   tenant: TenantContext,
   actor: Actor,
   requestId: string | undefined,
-  input: { name: string; description?: string; categoryId?: string },
+  input: { name: string; description?: string; categoryId?: string; unit?: "UNIT" | "KG" | "G" | "L" | "ML"; price?: string },
 ) {
   await assertCategoryBelongsToTenant(tenant, input.categoryId);
 
@@ -70,7 +70,14 @@ export async function updateProductOrThrow(
   actor: Actor,
   requestId: string | undefined,
   id: string,
-  patch: { name?: string; description?: string | null; categoryId?: string | null; status?: "ACTIVE" | "ARCHIVED" },
+  patch: {
+    name?: string;
+    description?: string | null;
+    categoryId?: string | null;
+    status?: "ACTIVE" | "ARCHIVED";
+    unit?: "UNIT" | "KG" | "G" | "L" | "ML";
+    price?: string | null;
+  },
 ) {
   if (patch.categoryId !== undefined) {
     await assertCategoryBelongsToTenant(tenant, patch.categoryId);

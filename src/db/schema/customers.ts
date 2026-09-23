@@ -1,4 +1,4 @@
-import { index, text, uuid } from "drizzle-orm/pg-core";
+import { index, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { timestamps } from "./_helpers.js";
 import { naPistaSchema } from "./categories.js";
 
@@ -38,5 +38,10 @@ export const customers = naPistaSchema.table(
     // and the status filter every list call applies by default.
     index("customers_org_created_idx").on(table.organizationId, table.createdAt),
     index("customers_org_status_idx").on(table.organizationId, table.status),
+    // F23: composite-FK target for orders.customer_id (same pattern
+    // ADR-021 established for products -> categories) — added now because
+    // Order is the first thing that ever needs to reference a Customer by
+    // FK; nothing about Customer's own behavior changes.
+    uniqueIndex("customers_org_id_unique").on(table.organizationId, table.id),
   ],
 );

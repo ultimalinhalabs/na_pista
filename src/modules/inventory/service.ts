@@ -10,6 +10,7 @@ import {
   insertMovement,
   listBalances,
   listMovements,
+  type BalanceRow,
   type BalanceWithProduct,
   type MovementRow,
   type TenantContext,
@@ -48,6 +49,9 @@ export async function listAllMovements(tenant: TenantContext, productId: string,
   return listMovements(tenant, productId, filters);
 }
 
+/** Structurally the same executor shape every repository function already accepts (`Pick<typeof db, ...>`) — a transaction (`tx`) satisfies this. */
+type Tx = Pick<typeof db, "insert" | "select" | "update">;
+
 /**
  * ADR-028: the one transaction that establishes F22's core invariant —
  * a stock movement and its balance update happen together, or neither
@@ -55,6 +59,22 @@ export async function listAllMovements(tenant: TenantContext, productId: string,
  * same transaction (F22 brief §22): an archived product never receives
  * a new movement, but its existing balance/history stay fully intact
  * and readable (nothing here ever touches a product row).
+ *
+ * F23 (brief §18/§43): Order confirmation needs this exact mutation to
+ * participate in ITS OWN outer transaction (Order status change + stock
+ * movements + audit, all-or-nothing) — without duplicating this logic
+ * inside Orders and without bypassing this service to touch
+ * `inventory_balances`/`stock_movements` directly (F23 brief §18's
+ * explicit instruction). The minimal refactor: an optional `externalTx`
+ * parameter. When provided, this function runs its body against that
+ * transaction directly (no nested `BEGIN` — the caller's transaction is
+ * the only one, so a rollback anywhere in the caller rolls this back too)
+ * and leaves usage-recording to the caller, since recording usage before
+ * the OUTER transaction commits could record it for a movement that still
+ * might roll back if a later step in the caller's own flow fails. Every
+ * existing caller (the standalone `POST .../movements` route, every F22
+ * test) passes no `externalTx` and gets byte-for-byte the same behavior
+ * as before this change — own transaction, own usage recording.
  */
 export async function createMovement(
   tenant: TenantContext,
@@ -62,8 +82,9 @@ export async function createMovement(
   requestId: string | undefined,
   productId: string,
   input: { type: MovementType; quantity: string; reason?: string },
-) {
-  const result = await db.transaction(async (tx) => {
+  externalTx?: Tx,
+): Promise<{ balance: BalanceRow; movement: MovementRow }> {
+  const run = async (tx: Tx) => {
     const product = await getProduct(tenant, productId, tx);
     if (!product) throw new ProductNotFoundError();
     if (product.status === "ARCHIVED") {
@@ -114,9 +135,13 @@ export async function createMovement(
     );
 
     return { balance, movement };
-  });
+  };
 
+  if (externalTx) {
+    return run(externalTx);
+  }
+
+  const result = await db.transaction(run);
   await recordUsage(tenant.organizationId, `inventory.movement:${result.movement.id}`, { resourceType: "inventory_movement", resourceId: result.movement.id }, requestId);
-
   return result;
 }

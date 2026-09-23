@@ -1,4 +1,5 @@
-import { foreignKey, index, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { check, foreignKey, index, numeric, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { timestamps } from "./_helpers.js";
 import { categories, naPistaSchema } from "./categories.js";
 
@@ -22,6 +23,15 @@ import { categories, naPistaSchema } from "./categories.js";
  * record or changes independently of the product. Keeping it here also
  * avoids duplicating the concept across two tables. Minimal fixed enum,
  * not a UOM engine (OD-04, closed for this slice — see ADR-027).
+ *
+ * ADR-031 (F23): `price numeric(14,2)`, nullable — a single current
+ * mutable selling price, never a float (ADR-029). Nullable so every
+ * existing F20/F21/F22 Product (which has no price today) needs no fake
+ * migration-time value; `NULL` ("not yet priced") and `0` ("free") are
+ * deliberately distinct, both valid. Enforcement that a Product MUST have
+ * a price lives at Order-item-creation time (`src/modules/orders/`), not
+ * here — Products may exist un-priced. No price-history table, no price
+ * lists (no demonstrated requirement).
  */
 export const products = naPistaSchema.table(
   "products",
@@ -33,6 +43,7 @@ export const products = naPistaSchema.table(
     description: text("description"),
     status: text("status", { enum: ["ACTIVE", "ARCHIVED"] }).notNull().default("ACTIVE"),
     unit: text("unit", { enum: ["UNIT", "KG", "G", "L", "ML"] }).notNull().default("UNIT"),
+    price: numeric("price", { precision: 14, scale: 2 }),
     ...timestamps,
   },
   (table) => [
@@ -40,6 +51,8 @@ export const products = naPistaSchema.table(
     index("products_org_created_idx").on(table.organizationId, table.createdAt),
     index("products_org_category_idx").on(table.organizationId, table.categoryId),
     index("products_org_status_idx").on(table.organizationId, table.status),
+    // ADR-031/ADR-029: negative price is never valid; NULL (unpriced) is explicitly allowed.
+    check("products_price_non_negative", sql`${table.price} IS NULL OR ${table.price} >= 0`),
     // Composite FK: a product can only ever reference a category that
     // belongs to the SAME organization — enforced by Postgres, not just
     // application code (tenancy.md §3 / F20 brief §15). NULL categoryId
