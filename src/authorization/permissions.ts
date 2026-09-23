@@ -15,6 +15,18 @@
  * an inventory balance in this slice (F22 brief §19: "do not expose
  * inventory.delete merely because the permission naming convention
  * suggests it").
+ *
+ * F23: `orders.create` gates `POST /orders`; `orders.update` gates every
+ * other mutation — editing a DRAFT (items/customer) AND every lifecycle
+ * transition (confirm/cancel/complete) alike. Deliberately NOT split
+ * further per-transition (F23 brief §27: "do not invent unnecessary
+ * permission granularity") — unlike Inventory's create/update split
+ * (which reflects two genuinely different actions, RECEIPT vs
+ * ADJUSTMENT), every Order mutation here is the same class of action on
+ * the same resource. No `orders.delete` — Orders are never physically
+ * deleted; cancellation is a lifecycle transition, gated like any other
+ * mutation, not a separate permission tier (mirrors `inventory.delete`'s
+ * deliberate absence).
  */
 export const ROLE_PERMISSIONS: Record<string, string[]> = {
   OWNER: [
@@ -33,6 +45,9 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     "inventory.read",
     "inventory.create",
     "inventory.update",
+    "orders.read",
+    "orders.create",
+    "orders.update",
   ],
   ADMIN: [
     "products.read",
@@ -50,6 +65,9 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     "inventory.read",
     "inventory.create",
     "inventory.update",
+    "orders.read",
+    "orders.create",
+    "orders.update",
   ],
   MANAGER: [
     "products.read",
@@ -64,8 +82,11 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     "inventory.read",
     "inventory.create",
     "inventory.update",
+    "orders.read",
+    "orders.create",
+    "orders.update",
   ],
-  STAFF: ["products.read", "categories.read", "customers.read", "inventory.read"],
+  STAFF: ["products.read", "categories.read", "customers.read", "inventory.read", "orders.read"],
 };
 
 export function roleHasPermission(roleKey: string, permission: string): boolean {
