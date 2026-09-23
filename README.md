@@ -27,6 +27,15 @@ Platform (ADR-025), pronto para futuros módulos de Commerce (`Customer → Orde
 (`Customer → Appointment`). 37/37 testes específicos de Customers; suite completa do `na-pista` (Customers +
 Products/Categories da F20, inalterados) em 79/79.
 
+**F22 (Inventory Management, vertical slice real): COMPLETE — ver [`docs/f22-report.md`](docs/f22-report.md).**
+Terceiro módulo de negócio real: `Product → InventoryBalance → StockMovement`, com OD-04 (unidades/quantidades
+fraccionárias), OD-05 (stock negativo/backorder) e OD-06 (localizações) fechadas via ADR-027/ADR-028. Mutação
+de balance atómica e concorrência-segura (`UPDATE`/`INSERT ON CONFLICT` condicional, sem `SELECT ... FOR
+UPDATE`), **provada com transacções Postgres realmente concorrentes** (não apenas revisão de código): duas
+saídas simultâneas de 7 contra um saldo de 10 resolvem em exactamente uma sucedida, saldo final 3. 48/48 testes
+específicos de Inventory; suite completa do `na-pista` (Inventory + Customers/Products/Categories das fases
+anteriores, inalterados) em 127/127.
+
 ## Em duas linhas
 
 ```
@@ -41,6 +50,9 @@ NA PISTA    → "O que pode fazer?" (produtos, stock, pedidos, clientes | servi�
   autorização/entitlement/audit/usage reais. Ver [`docs/f20-report.md`](docs/f20-report.md).
 - **Segundo slice:** Customer Management — **construído (F21)**: primitiva transversal, sem acoplamento a
   Products nem ao User do Platform. Ver [`docs/f21-report.md`](docs/f21-report.md).
+- **Terceiro slice:** Inventory Management — **construído (F22)**: `Product → InventoryBalance →
+  StockMovement`, mutação atómica/concorrência-segura, sem localizações/UOM engine. Ver
+  [`docs/f22-report.md`](docs/f22-report.md).
 
 ## Mapa da documentação
 
@@ -68,9 +80,11 @@ NA PISTA    → "O que pode fazer?" (produtos, stock, pedidos, clientes | servi�
 | [`docs/f20-report.md`](docs/f20-report.md) | **F20** — relatório final: domínio, API, BD, testes, limitações |
 | [`docs/api/customers-api.md`](docs/api/customers-api.md) | **F21** — contrato da API de Customers |
 | [`docs/f21-report.md`](docs/f21-report.md) | **F21** — relatório final: domínio, API, BD, testes, limitações |
-| [`docs/adr/`](docs/adr/README.md) | ADR-001 … ADR-026 |
+| [`docs/api/inventory-api.md`](docs/api/inventory-api.md) | **F22** — contrato da API de Inventory |
+| [`docs/f22-report.md`](docs/f22-report.md) | **F22** — relatório final: domínio, API, BD, concorrência, testes, limitações |
+| [`docs/adr/`](docs/adr/README.md) | ADR-001 … ADR-028 |
 | [`spikes/platform-integration/`](spikes/platform-integration/README.md) | **F19** — código do spike (removível), como correr os testes |
-| [`src/`](src) | **F20/F21** — código real do Na Pista (Categories/Products/Customers), não removível |
+| [`src/`](src) | **F20/F21/F22** — código real do Na Pista (Categories/Products/Customers/Inventory), não removível |
 
 ## Convenções deste blueprint
 - **DECIDIDO** — decorre do conceito oficial, do CLAUDE.md ou do código do Platform.
@@ -78,7 +92,7 @@ NA PISTA    → "O que pode fazer?" (produtos, stock, pedidos, clientes | servi�
 - **OPEN DECISION (OD-nn)** — não pode ser determinada com segurança a partir do conceito; nunca tratada como fechada.
 - **PG-nn** lacuna do Platform · **DV-nn** divergência encontrada · **R-nn** risco.
 
-## A correr (F20/F21)
+## A correr (F20/F21/F22)
 
 ```bash
 npm install
@@ -90,7 +104,7 @@ npm run dev                 # API em :4200
 # testes (precisam de um UL Platform real já a correr em :4000)
 npm run test:unit
 npm run test:integration    # precisa de NA_PISTA_DATABASE_URL real
-cd ../ul-platform && npm run f20:provision && npm run f21:provision   # fixtures reais
+cd ../ul-platform && npm run f20:provision && npm run f21:provision && npm run f22:provision   # fixtures reais
 cd ../na-pista && npm run test:e2e
 ```
 

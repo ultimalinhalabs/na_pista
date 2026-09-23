@@ -33,3 +33,5 @@ e [`../decisions.md`](../decisions.md) (F19 — todas fechadas com evidência de
 | [024](ADR-024-customer-domain-model.md) | Customer Domain Model | Accepted — implemented | F21 |
 | [025](ADR-025-customer-identity-platform-user-separation.md) | Customer Identity / Platform User Separation | Accepted — implemented | F21 |
 | [026](ADR-026-customer-lifecycle.md) | Customer Lifecycle | Accepted — implemented | F21 |
+| [027](ADR-027-inventory-model.md) | Inventory Model | Accepted — implemented | F22 |
+| [028](ADR-028-stock-movement-transaction-semantics.md) | Stock Movement and Transaction Semantics | Accepted — implemented | F22 |
