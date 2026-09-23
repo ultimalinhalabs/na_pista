@@ -36,6 +36,17 @@ saídas simultâneas de 7 contra um saldo de 10 resolvem em exactamente uma suce
 específicos de Inventory; suite completa do `na-pista` (Inventory + Customers/Products/Categories das fases
 anteriores, inalterados) em 127/127.
 
+**F23A (arquitectura de Commerce & Money): COMPLETE — ver [`docs/f23a-report.md`](docs/f23a-report.md).**
+Decision spike — **sem** Orders/OrderItems/preço implementados. Fecha OD-01 (moeda/dinheiro, para o âmbito de
+moeda única AOA) e OD-03 (`Order.customerId` opcional): dinheiro = `numeric(14,2)` + string decimal na API
+(desvio explícito e fundamentado da proposta original de "minor units" da F18 — ver ADR-029), arredondamento
+= `ROUND()` nativo do Postgres (half-away-from-zero, **confirmado empiricamente** contra a BD real), moeda =
+uma por Organization, sempre snapshot em `Order.currency`, `OrderItem` faz snapshot de `unitPrice`/
+`productName`, ciclo de vida mínimo `DRAFT → CONFIRMED → COMPLETED|CANCELED` com Inventory a mudar **só** em
+`CONFIRMED` (reutilizando `ADJUSTMENT_OUT`/`ADJUSTMENT_IN` sem alterar o modelo de Inventory). ADR-029..032.
+Pacote de decisão completo em [`docs/f23a-commerce-money-decisions.md`](docs/f23a-commerce-money-decisions.md)
+— a F23 pode implementar Orders sem tomar nenhuma decisão monetária nova.
+
 ## Em duas linhas
 
 ```
@@ -82,7 +93,9 @@ NA PISTA    → "O que pode fazer?" (produtos, stock, pedidos, clientes | servi�
 | [`docs/f21-report.md`](docs/f21-report.md) | **F21** — relatório final: domínio, API, BD, testes, limitações |
 | [`docs/api/inventory-api.md`](docs/api/inventory-api.md) | **F22** — contrato da API de Inventory |
 | [`docs/f22-report.md`](docs/f22-report.md) | **F22** — relatório final: domínio, API, BD, concorrência, testes, limitações |
-| [`docs/adr/`](docs/adr/README.md) | ADR-001 … ADR-028 |
+| [`docs/f23a-commerce-money-decisions.md`](docs/f23a-commerce-money-decisions.md) | **F23A** — pacote de decisões de dinheiro/moeda/commerce, contrato para a F23 |
+| [`docs/f23a-report.md`](docs/f23a-report.md) | **F23A** — relatório final do spike: decisões, validação, auto-revisão |
+| [`docs/adr/`](docs/adr/README.md) | ADR-001 … ADR-032 |
 | [`spikes/platform-integration/`](spikes/platform-integration/README.md) | **F19** — código do spike (removível), como correr os testes |
 | [`src/`](src) | **F20/F21/F22** — código real do Na Pista (Categories/Products/Customers/Inventory), não removível |
 
