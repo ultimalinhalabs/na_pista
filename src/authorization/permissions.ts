@@ -36,6 +36,16 @@
  * archiving more tightly than any other write, following Inventory's/
  * Orders' more recent "no extra tier without a specific reason" posture
  * instead.
+ *
+ * F25 (ADR-036/037, F25A §8): `professionals.create` gates `POST
+ * /professionals`; `professionals.update` gates every other mutation,
+ * INCLUDING archive/reactivate AND managing `professional_services`
+ * associations (create/remove) — no separate
+ * `professional_services.manage` tier (mirrors Order's own item-
+ * management precedent: one permission covers a resource's own fields
+ * and its closely-related sub-resource). No `professionals.delete` —
+ * reasoned independently for Professional (not copied from Service),
+ * same conclusion: no demonstrated need for a stricter tier.
  */
 export const ROLE_PERMISSIONS: Record<string, string[]> = {
   OWNER: [
@@ -60,6 +70,9 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     "services.read",
     "services.create",
     "services.update",
+    "professionals.read",
+    "professionals.create",
+    "professionals.update",
   ],
   ADMIN: [
     "products.read",
@@ -83,6 +96,9 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     "services.read",
     "services.create",
     "services.update",
+    "professionals.read",
+    "professionals.create",
+    "professionals.update",
   ],
   MANAGER: [
     "products.read",
@@ -103,8 +119,11 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     "services.read",
     "services.create",
     "services.update",
+    "professionals.read",
+    "professionals.create",
+    "professionals.update",
   ],
-  STAFF: ["products.read", "categories.read", "customers.read", "inventory.read", "orders.read", "services.read"],
+  STAFF: ["products.read", "categories.read", "customers.read", "inventory.read", "orders.read", "services.read", "professionals.read"],
 };
 
 export function roleHasPermission(roleKey: string, permission: string): boolean {

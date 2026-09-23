@@ -89,6 +89,22 @@ relatório da F24 tinha assinalado — mas a UI não é construída nesta fase. 
 completo em [`docs/f25a-professionals-decisions.md`](docs/f25a-professionals-decisions.md) — a F25 pode
 implementar Professionals sem tomar nenhuma decisão de domínio nova.
 
+**F25 (Professional Management, vertical slice real — API/BD/UI): COMPLETE — ver [`docs/f25-report.md`](docs/f25-report.md).**
+Sexto módulo de negócio real: `Professional` + `professional_services`, implementando o contrato da F25A
+exactamente (ADR-036..038) — sem `userId`, sem campos de agenda/disponibilidade, lifecycle `ACTIVE|ARCHIVED`
+via `PATCH { status }` (sem `DELETE`, sem `professionals.delete`, sem `professional_services.manage`). A
+associação Professional↔Service é uma tabela de junção N:M tenant-safe por duas FKs compostas próprias
+(`professional_services.(organization_id, professional_id)`/`(organization_id, service_id)`), nunca uma FK
+directa em nenhum dos dois lados — o mesmo mecanismo já provado por `order_items` (F23), reutilizado sem
+alterações. Associar exige que ambos os lados estejam `ACTIVE` (`PROFESSIONAL_ARCHIVED`/`SERVICE_ARCHIVED`,
+409); remover uma associação é sempre permitido, mesmo com um dos lados arquivado. **Ao contrário da F24, esta
+fase constrói a UI** em [`../na-pista-console`](../na-pista-console) (confirmado em F25A como a UI oficial),
+incluindo o preenchimento retroactivo da UI de Services que a F24 tinha deliberadamente deixado por fazer
+(tipo `Service`, cliente de API, permissões) — pré-requisito real para o selector de associação de
+Professionals, não scope creep. Testes unitários/integração/E2E do `na-pista` e o primeiro conjunto de testes
+de componente do `na-pista-console` (Vitest + React Testing Library, convenção nova desta fase — ver
+`docs/f25-report.md` "UI tests").
+
 ## Em duas linhas
 
 ```
@@ -148,9 +164,11 @@ NA PISTA    → "O que pode fazer?" (produtos, stock, pedidos, clientes | servi�
 | [`docs/f24-report.md`](docs/f24-report.md) | **F24** — relatório final: modelo, API, BD, testes, auto-revisão, decisão de escopo de UI |
 | [`docs/f25a-professionals-decisions.md`](docs/f25a-professionals-decisions.md) | **F25A** — pacote de decisões do domínio de Professionals, contrato para a F25 |
 | [`docs/f25a-report.md`](docs/f25a-report.md) | **F25A** — relatório final do spike: decisões, alternativas, auto-revisão |
+| [`docs/api/professionals-api.md`](docs/api/professionals-api.md) | **F25** — contrato da API de Professionals (incluindo `professional_services`) |
+| [`docs/f25-report.md`](docs/f25-report.md) | **F25** — relatório final: modelo, API, BD, associação N:M, UI, testes, auto-revisão |
 | [`docs/adr/`](docs/adr/README.md) | ADR-001 … ADR-038 |
 | [`spikes/platform-integration/`](spikes/platform-integration/README.md) | **F19** — código do spike (removível), como correr os testes |
-| [`src/`](src) | **F20/F21/F22/F23/F24** — código real do Na Pista (Categories/Products/Customers/Inventory/Orders/Services), não removível |
+| [`src/`](src) | **F20/F21/F22/F23/F24/F25** — código real do Na Pista (Categories/Products/Customers/Inventory/Orders/Services/Professionals), não removível |
 
 ## Convenções deste blueprint
 - **DECIDIDO** — decorre do conceito oficial, do CLAUDE.md ou do código do Platform.
@@ -158,7 +176,7 @@ NA PISTA    → "O que pode fazer?" (produtos, stock, pedidos, clientes | servi�
 - **OPEN DECISION (OD-nn)** — não pode ser determinada com segurança a partir do conceito; nunca tratada como fechada.
 - **PG-nn** lacuna do Platform · **DV-nn** divergência encontrada · **R-nn** risco.
 
-## A correr (F20/F21/F22/F23/F24)
+## A correr (F20/F21/F22/F23/F24/F25)
 
 ```bash
 npm install
@@ -170,7 +188,7 @@ npm run dev                 # API em :4200
 # testes (precisam de um UL Platform real já a correr em :4000)
 npm run test:unit
 npm run test:integration    # precisa de NA_PISTA_DATABASE_URL real
-cd ../ul-platform && npm run f20:provision && npm run f21:provision && npm run f22:provision && npm run f23:provision && npm run f24:provision   # fixtures reais
+cd ../ul-platform && npm run f20:provision && npm run f21:provision && npm run f22:provision && npm run f23:provision && npm run f24:provision && npm run f25:provision   # fixtures reais
 cd ../na-pista && npm run test:e2e
 ```
 

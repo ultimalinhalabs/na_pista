@@ -132,6 +132,20 @@ export class EmptyOrderError extends AppError {
   }
 }
 
+/** F25 (ADR-037): a new professional_services association may not be created against an ARCHIVED Professional — a new capability should not be configured onto a resource being wound down. Existing associations are unaffected (they are never removed by archiving). */
+export class ProfessionalArchivedError extends AppError {
+  constructor(message = "This professional is archived; new service associations are not allowed") {
+    super(409, "PROFESSIONAL_ARCHIVED", message);
+  }
+}
+
+/** F25 (ADR-037): a new professional_services association may not be created against an ARCHIVED Service — mirrors ProductArchivedError's exact reasoning (ADR-028), applied to the Professional/Service catalog relationship. */
+export class ServiceArchivedError extends AppError {
+  constructor(message = "This service is archived; new professional associations are not allowed") {
+    super(409, "SERVICE_ARCHIVED", message);
+  }
+}
+
 /**
  * Postgres unique_violation (23505) walked through drizzle-orm's
  * `DrizzleQueryError.cause` chain — same pattern ul-platform's own

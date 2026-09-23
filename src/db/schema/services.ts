@@ -1,4 +1,4 @@
-import { check, index, integer, numeric, text, uuid } from "drizzle-orm/pg-core";
+import { check, index, integer, numeric, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { naPistaSchema } from "./categories.js";
 import { timestamps } from "./_helpers.js";
@@ -33,11 +33,12 @@ import { timestamps } from "./_helpers.js";
  * may legitimately share a name, same reasoning ADR-024 already applied
  * to `Customer.name`.
  *
- * No composite-FK-target unique index on `(organization_id, id)` yet —
- * unlike `customers`/`orders`, nothing references Service by FK in this
- * phase (F25's future `professional_services` is explicitly NOT built
- * now, ADR-035) — adding one speculatively would be exactly the
- * "índices especulativos" F24 brief §9 rules out.
+ * F25 (ADR-037): `services_org_id_unique` below is the ONE authorized
+ * change to this table — a composite-FK-target unique index, added now
+ * because `professional_services` is the first thing that ever needs to
+ * reference a Service by FK (the exact same one-line addition F23 made
+ * to `customers` the moment `orders` first needed one). Nothing else
+ * about Service's own shape/semantics changes.
  */
 export const services = naPistaSchema.table(
   "services",
@@ -52,6 +53,7 @@ export const services = naPistaSchema.table(
     ...timestamps,
   },
   (table) => [
+    uniqueIndex("services_org_id_unique").on(table.organizationId, table.id),
     index("services_org_created_idx").on(table.organizationId, table.createdAt),
     index("services_org_status_idx").on(table.organizationId, table.status),
     check("services_duration_minutes_positive", sql`${table.durationMinutes} > 0`),

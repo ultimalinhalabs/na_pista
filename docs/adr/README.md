@@ -39,9 +39,9 @@ e [`../decisions.md`](../decisions.md) (F19 — todas fechadas com evidência de
 | [030](ADR-030-currency-model.md) | Currency Model | Accepted — implemented (F23) | F23A |
 | [031](ADR-031-product-pricing-and-order-price-snapshot.md) | Product Pricing and Order Price Snapshot | Accepted — implemented (F23) | F23A |
 | [032](ADR-032-order-inventory-boundary.md) | Order Lifecycle and the Order/Inventory Boundary | Accepted — implemented (F23) | F23A |
-| [033](ADR-033-service-domain-model.md) | Service Domain Model | Accepted — spike, not yet implemented | F24A |
-| [034](ADR-034-service-duration-and-pricing.md) | Service Duration and Pricing Model | Accepted — spike, not yet implemented | F24A |
-| [035](ADR-035-service-professional-scheduling-boundary.md) | Service / Professional / Scheduling / Appointment Boundary | Accepted — spike, not yet implemented | F24A |
-| [036](ADR-036-professional-domain-model.md) | Professional Domain Model | Accepted — spike, not yet implemented | F25A |
-| [037](ADR-037-professional-service-relationship.md) | Professional-Service Relationship (`professional_services`) | Accepted — spike, not yet implemented | F25A |
-| [038](ADR-038-professional-scheduling-appointment-boundary.md) | Professional / Scheduling / Appointment / Auth Boundary | Accepted — spike, not yet implemented | F25A |
+| [033](ADR-033-service-domain-model.md) | Service Domain Model | Accepted — implemented (F24) | F24A |
+| [034](ADR-034-service-duration-and-pricing.md) | Service Duration and Pricing Model | Accepted — implemented (F24) | F24A |
+| [035](ADR-035-service-professional-scheduling-boundary.md) | Service / Professional / Scheduling / Appointment Boundary | Accepted — implemented (F24) | F24A |
+| [036](ADR-036-professional-domain-model.md) | Professional Domain Model | Accepted — implemented (F25) | F25A |
+| [037](ADR-037-professional-service-relationship.md) | Professional-Service Relationship (`professional_services`) | Accepted — implemented (F25) | F25A |
+| [038](ADR-038-professional-scheduling-appointment-boundary.md) | Professional / Scheduling / Appointment / Auth Boundary | Accepted — implemented (F25) | F25A |

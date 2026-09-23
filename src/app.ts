@@ -9,6 +9,7 @@ import { customersRouter } from "./modules/customers/routes.js";
 import { inventoryRouter } from "./modules/inventory/routes.js";
 import { ordersRouter } from "./modules/orders/routes.js";
 import { productsRouter } from "./modules/products/routes.js";
+import { professionalsRouter } from "./modules/professionals/routes.js";
 import { servicesRouter } from "./modules/services/routes.js";
 import { requestId } from "./shared/requestId.js";
 import { ok } from "./shared/response.js";
@@ -28,7 +29,7 @@ export function buildApp() {
 
   app.get("/v1/health", (_req, res) => ok(res, { status: "ok" }));
 
-  app.use("/v1", authenticate, categoriesRouter, productsRouter, customersRouter, inventoryRouter, ordersRouter, servicesRouter);
+  app.use("/v1", authenticate, categoriesRouter, productsRouter, customersRouter, inventoryRouter, ordersRouter, servicesRouter, professionalsRouter);
 
   app.use(errorHandler);
   return app;

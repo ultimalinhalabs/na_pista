@@ -5,6 +5,7 @@ import * as productRepo from "../../src/modules/products/repository.js";
 import * as inventoryRepo from "../../src/modules/inventory/repository.js";
 import * as orderRepo from "../../src/modules/orders/repository.js";
 import * as serviceRepo from "../../src/modules/services/repository.js";
+import * as professionalRepo from "../../src/modules/professionals/repository.js";
 
 /**
  * F20 brief §13/§36: a repository function must never run without a
@@ -76,4 +77,19 @@ test("service repository refuses to run without a TenantContext", async () => {
   // @ts-expect-error deliberately calling with an empty object to prove the guard
   await assert.rejects(() => serviceRepo.getService({}, "id"), /TenantContext/);
   await assert.rejects(() => serviceRepo.updateService({ organizationId: "" }, "id", {}), /TenantContext/);
+});
+
+test("professional repository refuses to run without a TenantContext", async () => {
+  // @ts-expect-error deliberately calling without a tenant to prove the guard
+  await assert.rejects(() => professionalRepo.insertProfessional(undefined, { name: "x" }), /TenantContext/);
+  // @ts-expect-error deliberately calling with null to prove the guard
+  await assert.rejects(() => professionalRepo.listProfessionals(null, { limit: 10 }), /TenantContext/);
+  // @ts-expect-error deliberately calling with an empty object to prove the guard
+  await assert.rejects(() => professionalRepo.getProfessional({}, "id"), /TenantContext/);
+  await assert.rejects(() => professionalRepo.updateProfessional({ organizationId: "" }, "id", {}), /TenantContext/);
+  // @ts-expect-error deliberately calling without a tenant to prove the guard
+  await assert.rejects(() => professionalRepo.insertAssociation(undefined, "professional-id", "service-id"), /TenantContext/);
+  // @ts-expect-error deliberately calling with null to prove the guard
+  await assert.rejects(() => professionalRepo.deleteAssociation(null, "professional-id", "service-id"), /TenantContext/);
+  await assert.rejects(() => professionalRepo.listServicesForProfessional({ organizationId: "" }, "professional-id"), /TenantContext/);
 });

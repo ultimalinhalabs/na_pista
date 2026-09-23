@@ -7,15 +7,19 @@ import { z } from "zod";
  * has no existing convention for). Accepts an optional leading `+` and
  * 7-20 digits/spaces/dashes/parentheses — a shape check, not a real
  * validity check (no country-code table, no length-per-country rules).
+ *
+ * Exported (F25, ADR-036): `Professional.phone`/`Professional.email`
+ * reuse these exact validators — never duplicated, never authentication
+ * identity for either entity.
  */
-const phoneSchema = z
+export const phoneSchema = z
   .string()
   .trim()
   .regex(/^\+?[0-9()\-\s]{7,20}$/, "Invalid phone number format")
   .optional();
 
 const nameSchema = z.string().trim().min(1).max(200);
-const emailSchema = z.string().trim().email().max(320).optional();
+export const emailSchema = z.string().trim().email().max(320).optional();
 const notesSchema = z.string().trim().max(2000).optional();
 
 /** `.strict()`: unknown fields — including `status` — are rejected on create (F21 brief §8: status must not be freely set through create). */
