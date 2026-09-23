@@ -15,6 +15,13 @@ import { categories, naPistaSchema } from "./categories.js";
  * define ("temporarily unavailable for purchase" only makes sense once
  * purchasing exists) — adding it speculatively would be exactly the
  * "workflow excessivo" the brief warns against. Aditive later.
+ *
+ * ADR-027 (F22): `unit` lives on Product, not on Inventory — it is an
+ * intrinsic property of the thing being measured ("this product is
+ * always counted in kg"), never something that varies per inventory
+ * record or changes independently of the product. Keeping it here also
+ * avoids duplicating the concept across two tables. Minimal fixed enum,
+ * not a UOM engine (OD-04, closed for this slice — see ADR-027).
  */
 export const products = naPistaSchema.table(
   "products",
@@ -25,6 +32,7 @@ export const products = naPistaSchema.table(
     name: text("name").notNull(),
     description: text("description"),
     status: text("status", { enum: ["ACTIVE", "ARCHIVED"] }).notNull().default("ACTIVE"),
+    unit: text("unit", { enum: ["UNIT", "KG", "G", "L", "ML"] }).notNull().default("UNIT"),
     ...timestamps,
   },
   (table) => [

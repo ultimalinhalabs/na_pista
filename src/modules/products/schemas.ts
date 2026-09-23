@@ -2,11 +2,15 @@ import { z } from "zod";
 
 const uuidSchema = z.string().uuid();
 
+/** ADR-027 (F22): minimal fixed unit enum, lives on Product — see db/schema/products.ts. */
+const unitSchema = z.enum(["UNIT", "KG", "G", "L", "ML"]);
+
 export const createProductSchema = z
   .object({
     name: z.string().trim().min(1).max(200),
     description: z.string().trim().max(2000).optional(),
     categoryId: uuidSchema.optional(),
+    unit: unitSchema.optional(),
   })
   .strict();
 
@@ -16,6 +20,7 @@ export const updateProductSchema = z
     description: z.string().trim().max(2000).nullable().optional(),
     categoryId: uuidSchema.nullable().optional(),
     status: z.enum(["ACTIVE", "ARCHIVED"]).optional(),
+    unit: unitSchema.optional(),
   })
   .strict();
 

@@ -15,6 +15,13 @@
       "when": 1790057291045,
       "tag": "0001_nervous_black_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790122933438,
+      "tag": "0002_skinny_thunderbolt",
+      "breakpoints": true
     }
   ]
 }

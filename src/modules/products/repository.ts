@@ -17,7 +17,7 @@ function assertTenant(tenant: TenantContext | undefined | null): asserts tenant 
 
 export async function insertProduct(
   tenant: TenantContext,
-  input: { name: string; description?: string; categoryId?: string | null },
+  input: { name: string; description?: string; categoryId?: string | null; unit?: "UNIT" | "KG" | "G" | "L" | "ML" },
   executor: Executor = db,
 ) {
   assertTenant(tenant);
@@ -28,6 +28,7 @@ export async function insertProduct(
       name: input.name,
       description: input.description,
       categoryId: input.categoryId ?? null,
+      ...(input.unit ? { unit: input.unit } : {}),
     })
     .returning();
   return row!;
@@ -68,7 +69,7 @@ export async function getProduct(tenant: TenantContext, id: string, executor: Ex
 export async function updateProduct(
   tenant: TenantContext,
   id: string,
-  patch: { name?: string; description?: string | null; categoryId?: string | null; status?: "ACTIVE" | "ARCHIVED" },
+  patch: { name?: string; description?: string | null; categoryId?: string | null; status?: "ACTIVE" | "ARCHIVED"; unit?: "UNIT" | "KG" | "G" | "L" | "ML" },
   executor: Executor = db,
 ) {
   assertTenant(tenant);
