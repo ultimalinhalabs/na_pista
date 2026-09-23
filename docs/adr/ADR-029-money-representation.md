@@ -1,6 +1,6 @@
 # ADR-029 — Money Representation
 
-- **Estado:** Accepted — decision spike, validated against real PostgreSQL, no production code yet
+- **Estado:** Accepted — implemented (F23), validated against real PostgreSQL
 - **Data:** 2026-09-23
 - **Phase:** F23A (spike, closes part of OD-01)
 

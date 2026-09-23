@@ -35,7 +35,7 @@ e [`../decisions.md`](../decisions.md) (F19 — todas fechadas com evidência de
 | [026](ADR-026-customer-lifecycle.md) | Customer Lifecycle | Accepted — implemented | F21 |
 | [027](ADR-027-inventory-model.md) | Inventory Model | Accepted — implemented | F22 |
 | [028](ADR-028-stock-movement-transaction-semantics.md) | Stock Movement and Transaction Semantics | Accepted — implemented | F22 |
-| [029](ADR-029-money-representation.md) | Money Representation | Accepted — spike, not yet implemented | F23A |
-| [030](ADR-030-currency-model.md) | Currency Model | Accepted — spike, not yet implemented | F23A |
-| [031](ADR-031-product-pricing-and-order-price-snapshot.md) | Product Pricing and Order Price Snapshot | Accepted — spike, not yet implemented | F23A |
-| [032](ADR-032-order-inventory-boundary.md) | Order Lifecycle and the Order/Inventory Boundary | Accepted — spike, not yet implemented | F23A |
+| [029](ADR-029-money-representation.md) | Money Representation | Accepted — implemented (F23) | F23A |
+| [030](ADR-030-currency-model.md) | Currency Model | Accepted — implemented (F23) | F23A |
+| [031](ADR-031-product-pricing-and-order-price-snapshot.md) | Product Pricing and Order Price Snapshot | Accepted — implemented (F23) | F23A |
+| [032](ADR-032-order-inventory-boundary.md) | Order Lifecycle and the Order/Inventory Boundary | Accepted — implemented (F23) | F23A |

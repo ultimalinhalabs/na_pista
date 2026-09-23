@@ -1,6 +1,6 @@
 # ADR-032 — Order Lifecycle and the Order/Inventory Boundary
 
-- **Estado:** Accepted — decision spike, no production code yet
+- **Estado:** Accepted — implemented (F23)
 - **Data:** 2026-09-23
 - **Phase:** F23A (spike)
 

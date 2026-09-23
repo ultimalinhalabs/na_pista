@@ -42,10 +42,14 @@ tenant (`:organizationId` validated against real membership or credential scope)
 ### `POST /organizations/:organizationId/products`
 - **Permission:** `products.create` (OWNER/ADMIN/MANAGER) · **Scope:** `catalog.write`.
 - **Entitlement:** `catalog.enabled`.
-- **Request:** `{ "name": string (1-200), "description"?: string (≤2000), "categoryId"?: uuid }`.
-- **Response `201`:** `{ id, organizationId, categoryId, name, description, status: "ACTIVE", createdAt, updatedAt }`.
+- **Request:** `{ "name": string (1-200), "description"?: string (≤2000), "categoryId"?: uuid, "unit"?:
+  "UNIT"|"KG"|"G"|"L"|"ML" (default "UNIT", ADR-027), "price"?: number|string }`. `price` accepts a JSON
+  number or decimal string, normalized to a fixed 2-decimal string (ADR-029); omit it to leave the Product
+  unpriced (`null`) — see "Pricing" below.
+- **Response `201`:** `{ id, organizationId, categoryId, name, description, unit, price, status: "ACTIVE",
+  createdAt, updatedAt }`. `price` is `null` when unset.
 - **Errors:** as Categories, plus `400 VALIDATION_ERROR` if `categoryId` is well-formed but does not belong to
-  this organization (never a raw foreign-key/database error).
+  this organization (never a raw foreign-key/database error), or if `price` is negative/NaN/Infinity.
 
 ### `GET /organizations/:organizationId/products`
 - **Permission:** `products.read` (all roles) · **Scope:** `catalog.read`.
@@ -58,17 +62,28 @@ tenant (`:organizationId` validated against real membership or credential scope)
 
 ### `PATCH /organizations/:organizationId/products/:productId`
 - **Permission:** `products.update` (OWNER/ADMIN/MANAGER) · **Scope:** `catalog.write`.
-- **Request:** `{ name?, description?: string|null, categoryId?: uuid|null, status?: "ACTIVE"|"ARCHIVED" }`.
+- **Request:** `{ name?, description?: string|null, categoryId?: uuid|null, status?: "ACTIVE"|"ARCHIVED",
+  unit?, price?: number|string|null }`. `price: null` explicitly clears it back to "not yet priced" — distinct
+  from `price: 0` ("deliberately free"), see "Pricing" below.
 - Re-pointing `categoryId` at another organization's category is rejected the same way creation is.
 
 ### `DELETE /organizations/:organizationId/products/:productId`
 - **Permission:** `products.delete` (OWNER/ADMIN only) · **Scope:** `catalog.write`.
 - **Effect:** archives (ADR-020), same posture as Categories' DELETE.
 
-## Not built in this slice (explicitly, F20 brief §32)
-Inventory, Orders, full Customers, variants, warehouses, barcode/SKU, suppliers, purchasing, POS, invoices,
-taxes, payments, delivery, loyalty, advanced analytics. A `price` field is deferred to when F18's OD-01
-(currency/decimalization) closes.
+## Pricing (F23, ADR-031)
+`Product.price` is `numeric(14,2)`, **nullable** — a single current, mutable selling price, no history table,
+no price lists (no demonstrated requirement). `null` ("not yet priced") and `0` ("deliberately free — sample,
+promotional, complimentary") are distinct, both valid; only negative/non-finite values are rejected. A Product
+with `price: null` exists and is fully manageable here, but **cannot be added to an Order** until priced — see
+[`orders-api.md`](orders-api.md) "Product price" for the exact enforcement point. Changing a Product's price
+here only affects **future** Orders — any `OrderItem` already created keeps its own price snapshot regardless
+of later changes here (ADR-031).
+
+## Not built in this slice (explicitly, F20 brief §32; superseded for pricing by F23/ADR-031)
+Full Customers (F21), Inventory (F22), Orders (F23) are covered in their own API docs. Still not built:
+variants, warehouses, barcode/SKU, suppliers, purchasing, POS, invoices, taxes, payments, delivery, loyalty,
+advanced analytics, price history/price lists.
 
 ## Machine-readable contract
 No OpenAPI document is generated in this pass — the shapes above are hand-written from the real Zod schemas

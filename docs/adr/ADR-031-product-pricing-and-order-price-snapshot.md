@@ -1,6 +1,6 @@
 # ADR-031 — Product Pricing and Order Price Snapshot
 
-- **Estado:** Accepted — decision spike, no production code yet
+- **Estado:** Accepted — implemented (F23)
 - **Data:** 2026-09-23
 - **Phase:** F23A (spike)
 - **Closes:** the "product price model" part of OD-01, for this slice's scope

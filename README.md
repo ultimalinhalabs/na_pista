@@ -47,6 +47,16 @@ uma por Organization, sempre snapshot em `Order.currency`, `OrderItem` faz snaps
 Pacote de decisão completo em [`docs/f23a-commerce-money-decisions.md`](docs/f23a-commerce-money-decisions.md)
 — a F23 pode implementar Orders sem tomar nenhuma decisão monetária nova.
 
+**F23 (Order Management, vertical slice real): COMPLETE — ver [`docs/f23-report.md`](docs/f23-report.md).**
+Quarto módulo de negócio real e primeiro domínio de Commerce: `Order → OrderItem`, implementando o contrato da
+F23A exactamente (ADR-029..032), sem reinterpretar nenhuma decisão monetária/de ciclo de vida. Inventory muda
+**só** em `CONFIRMED`, reutilizando o `createMovement` da F22 **sem alterações ao seu modelo/schema** (apenas
+um parâmetro opcional de transacção externa, para que Order + movimentos de stock + audit sejam atómicos numa
+única transacção Postgres). **Prova obrigatória de concorrência reutilizada da F22, sem lógica nova**: duas
+Orders a confirmar em simultâneo por 7 unidades cada, contra um stock de 10 → exactamente uma `CONFIRMED`,
+stock final 3, um único movimento. 71/71 testes específicos de Orders; suite completa do `na-pista` (Orders +
+Inventory/Customers/Products/Categories das fases anteriores, inalterados) em 198/198.
+
 ## Em duas linhas
 
 ```
@@ -64,6 +74,9 @@ NA PISTA    → "O que pode fazer?" (produtos, stock, pedidos, clientes | servi�
 - **Terceiro slice:** Inventory Management — **construído (F22)**: `Product → InventoryBalance →
   StockMovement`, mutação atómica/concorrência-segura, sem localizações/UOM engine. Ver
   [`docs/f22-report.md`](docs/f22-report.md).
+- **Quarto slice:** Order Management — **construído (F23)**: `Order → OrderItem`, dinheiro/moeda/preço exactamente
+  como a F23A decidiu (ADR-029..032), Inventory consumido só em `CONFIRMED` via o `createMovement` da F22 **sem
+  alterações ao seu schema**. Ver [`docs/f23-report.md`](docs/f23-report.md).
 
 ## Mapa da documentação
 
@@ -95,9 +108,11 @@ NA PISTA    → "O que pode fazer?" (produtos, stock, pedidos, clientes | servi�
 | [`docs/f22-report.md`](docs/f22-report.md) | **F22** — relatório final: domínio, API, BD, concorrência, testes, limitações |
 | [`docs/f23a-commerce-money-decisions.md`](docs/f23a-commerce-money-decisions.md) | **F23A** — pacote de decisões de dinheiro/moeda/commerce, contrato para a F23 |
 | [`docs/f23a-report.md`](docs/f23a-report.md) | **F23A** — relatório final do spike: decisões, validação, auto-revisão |
+| [`docs/api/orders-api.md`](docs/api/orders-api.md) | **F23** — contrato da API de Orders |
+| [`docs/f23-report.md`](docs/f23-report.md) | **F23** — relatório final: modelo, dinheiro, ciclo de vida, transacção, concorrência, testes, limitações |
 | [`docs/adr/`](docs/adr/README.md) | ADR-001 … ADR-032 |
 | [`spikes/platform-integration/`](spikes/platform-integration/README.md) | **F19** — código do spike (removível), como correr os testes |
-| [`src/`](src) | **F20/F21/F22** — código real do Na Pista (Categories/Products/Customers/Inventory), não removível |
+| [`src/`](src) | **F20/F21/F22/F23** — código real do Na Pista (Categories/Products/Customers/Inventory/Orders), não removível |
 
 ## Convenções deste blueprint
 - **DECIDIDO** — decorre do conceito oficial, do CLAUDE.md ou do código do Platform.
@@ -105,7 +120,7 @@ NA PISTA    → "O que pode fazer?" (produtos, stock, pedidos, clientes | servi�
 - **OPEN DECISION (OD-nn)** — não pode ser determinada com segurança a partir do conceito; nunca tratada como fechada.
 - **PG-nn** lacuna do Platform · **DV-nn** divergência encontrada · **R-nn** risco.
 
-## A correr (F20/F21/F22)
+## A correr (F20/F21/F22/F23)
 
 ```bash
 npm install
@@ -117,7 +132,7 @@ npm run dev                 # API em :4200
 # testes (precisam de um UL Platform real já a correr em :4000)
 npm run test:unit
 npm run test:integration    # precisa de NA_PISTA_DATABASE_URL real
-cd ../ul-platform && npm run f20:provision && npm run f21:provision && npm run f22:provision   # fixtures reais
+cd ../ul-platform && npm run f20:provision && npm run f21:provision && npm run f22:provision && npm run f23:provision   # fixtures reais
 cd ../na-pista && npm run test:e2e
 ```
 
