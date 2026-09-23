@@ -157,6 +157,24 @@ CHECK-constraint tests were rewritten to catch the error and assert on `error.ca
 confirmed both constraints do fire as designed (this was a test-assertion bug, not a schema bug — the FK/CHECK
 constraints themselves were correct on the first migration).
 
+`npm run lint` (which F20/F21's reports never actually claimed passing for the `na-pista` backend — only for
+`na-pista-console` — and which was never run as a gate before this phase) surfaced one real bug in new
+production code: `quantitySchema`'s magnitude bound was written as a hardcoded float literal
+(`999_999_999_999.999999`, 12 integer digits) while its own comment claimed `numeric(20,6)`'s actual ceiling
+(14 integer digits) — a 100x-too-strict bound, plus ESLint's `no-loss-of-precision` correctly flagged the
+literal itself as unrepresentable by a JS double in the first place. Fixed by validating the integer-digit
+*count* on the already-normalized string instead of comparing against a float constant — more correct (exact)
+and sidesteps the precision problem entirely rather than picking a "close enough" literal. Also cleaned up
+several `no-explicit-any` errors in this phase's own new E2E test files by typing map/filter callback
+parameters explicitly. The `call()` HTTP-test-helper's `{ data?: any; error?: any }` return shape was
+deliberately left matching `customersHelpers.ts`/`helpers.ts` (F20/F21, unchanged) rather than fixed only in
+`inventoryHelpers.ts` — that pattern is genuine, identical, pre-existing project debt across all four E2E
+helper files, not something this phase introduced; fixing one copy while leaving three others inconsistent
+would be worse than leaving all four consistent. `npm run lint` now reports 10 `no-explicit-any` errors, all
+of them pre-existing across those four files (confirmed by `git diff` — none in code this phase added or
+changed); `npm run typecheck` and `npm run build` — the checks F20/F21 actually claimed as gates — both pass
+with zero errors.
+
 ## Security review
 Searched for `organizationId`, `tenant`, `productId`, `inventoryId`, `service credential`, `JWT`, `API key`,
 `secret`, `password`, `quantity`, `customer`, `order` (F22 brief §36) across every new/modified file in this
@@ -181,6 +199,10 @@ slice (deliberately out of scope).
    from calling `requireAuthorized` as pure middleware — documented and justified (see "Authorization" above),
    not a hidden second authorization mechanism, but worth flagging as the one place a future refactor of
    `requireAuthorized` to accept a body-derived permission would simplify.
+6. `npm run lint` on the `na-pista` backend has 10 pre-existing `no-explicit-any` errors, all in the E2E
+   HTTP-test-helper pattern shared identically across `helpers.ts`/`customersHelpers.ts`/`inventoryHelpers.ts`
+   and the test files that inline the same shape — never claimed passing by F20/F21 either (see "Tests" above).
+   `typecheck`/`build` are clean; this is test-scaffolding debt, not production code.
 
 ## Deferred decisions
 Multi-location/warehouse inventory (OD-06, deferred, not closed shut — see ADR-027's additive extension path).
