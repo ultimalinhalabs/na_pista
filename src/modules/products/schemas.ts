@@ -11,8 +11,11 @@ const unitSchema = z.enum(["UNIT", "KG", "G", "L", "ML"]);
  * NaN/Infinity/negative, always normalizes to a fixed 2-decimal string
  * before it reaches Postgres. `0` is explicitly valid (a deliberately free
  * product) — only negative/non-finite input is rejected.
+ *
+ * Exported (F24, ADR-034): `Service.price` reuses this exact validator —
+ * no Service-specific reason to diverge from Product's money handling.
  */
-const priceSchema = z
+export const priceSchema = z
   .union([z.number(), z.string()])
   .transform((value, ctx) => {
     const num = typeof value === "string" ? Number(value) : value;

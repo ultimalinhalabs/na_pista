@@ -27,6 +27,15 @@
  * deleted; cancellation is a lifecycle transition, gated like any other
  * mutation, not a separate permission tier (mirrors `inventory.delete`'s
  * deliberate absence).
+ *
+ * F24 (ADR-033, F24A §14): `services.create` gates `POST /services`;
+ * `services.update` gates every other mutation, INCLUDING archive/
+ * reactivate (`PATCH { status }`) — no `services.delete`. A deliberate,
+ * reasoned departure from Product/Customer/Category's own OWNER/ADMIN-
+ * only archive tier: F24A found no Service-specific reason to restrict
+ * archiving more tightly than any other write, following Inventory's/
+ * Orders' more recent "no extra tier without a specific reason" posture
+ * instead.
  */
 export const ROLE_PERMISSIONS: Record<string, string[]> = {
   OWNER: [
@@ -48,6 +57,9 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     "orders.read",
     "orders.create",
     "orders.update",
+    "services.read",
+    "services.create",
+    "services.update",
   ],
   ADMIN: [
     "products.read",
@@ -68,6 +80,9 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     "orders.read",
     "orders.create",
     "orders.update",
+    "services.read",
+    "services.create",
+    "services.update",
   ],
   MANAGER: [
     "products.read",
@@ -85,8 +100,11 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     "orders.read",
     "orders.create",
     "orders.update",
+    "services.read",
+    "services.create",
+    "services.update",
   ],
-  STAFF: ["products.read", "categories.read", "customers.read", "inventory.read", "orders.read"],
+  STAFF: ["products.read", "categories.read", "customers.read", "inventory.read", "orders.read", "services.read"],
 };
 
 export function roleHasPermission(roleKey: string, permission: string): boolean {

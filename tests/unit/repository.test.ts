@@ -4,6 +4,7 @@ import * as categoryRepo from "../../src/modules/categories/repository.js";
 import * as productRepo from "../../src/modules/products/repository.js";
 import * as inventoryRepo from "../../src/modules/inventory/repository.js";
 import * as orderRepo from "../../src/modules/orders/repository.js";
+import * as serviceRepo from "../../src/modules/services/repository.js";
 
 /**
  * F20 brief §13/§36: a repository function must never run without a
@@ -65,4 +66,14 @@ test("order repository refuses to run without a TenantContext", async () => {
   // @ts-expect-error deliberately calling with null to prove the guard
   await assert.rejects(() => orderRepo.updateOrderItemQuantity(null, "order-id", "item-id", "1.000000"), /TenantContext/);
   await assert.rejects(() => orderRepo.deleteOrderItem({ organizationId: "" }, "order-id", "item-id"), /TenantContext/);
+});
+
+test("service repository refuses to run without a TenantContext", async () => {
+  // @ts-expect-error deliberately calling without a tenant to prove the guard
+  await assert.rejects(() => serviceRepo.insertService(undefined, { name: "x", durationMinutes: 30 }), /TenantContext/);
+  // @ts-expect-error deliberately calling with null to prove the guard
+  await assert.rejects(() => serviceRepo.listServices(null, { limit: 10 }), /TenantContext/);
+  // @ts-expect-error deliberately calling with an empty object to prove the guard
+  await assert.rejects(() => serviceRepo.getService({}, "id"), /TenantContext/);
+  await assert.rejects(() => serviceRepo.updateService({ organizationId: "" }, "id", {}), /TenantContext/);
 });

@@ -68,6 +68,15 @@ nem Customer; `professional_services` fica para a F25, aditivo, sem redesenhar S
 de decisão completo em [`docs/f24a-services-decisions.md`](docs/f24a-services-decisions.md) — a F24 pode
 implementar o catálogo de Serviços sem tomar nenhuma decisão de domínio nova.
 
+**F24 (Service Management, vertical slice real — API/BD): COMPLETE — ver [`docs/f24-report.md`](docs/f24-report.md).**
+Quinto módulo de negócio real: `Service`, implementando o contrato da F24A exactamente (ADR-033..035) —
+`durationMinutes integer` (número JSON simples, nunca string decimal), preço/moeda idênticos a Product sem
+coluna de moeda própria, lifecycle `ACTIVE|ARCHIVED` via `PATCH { status }` (sem `DELETE`, sem
+`services.delete`). 60/60 testes específicos de Services; suite completa do `na-pista` (Services + Orders/
+Inventory/Customers/Products/Categories das fases anteriores, inalterados) em 258/258. **UI não implementada
+nesta fase** — o próprio brief da F24 proibiu explicitamente alterar `na-pista-console` e restringiu o
+trabalho ao repositório `na-pista`; decisão documentada, não escondida, em `docs/f24-report.md`.
+
 ## Em duas linhas
 
 ```
@@ -123,9 +132,11 @@ NA PISTA    → "O que pode fazer?" (produtos, stock, pedidos, clientes | servi�
 | [`docs/f23-report.md`](docs/f23-report.md) | **F23** — relatório final: modelo, dinheiro, ciclo de vida, transacção, concorrência, testes, limitações |
 | [`docs/f24a-services-decisions.md`](docs/f24a-services-decisions.md) | **F24A** — pacote de decisões do domínio de Serviços, contrato para a F24 |
 | [`docs/f24a-report.md`](docs/f24a-report.md) | **F24A** — relatório final do spike: decisões, alternativas, auto-revisão |
+| [`docs/api/services-api.md`](docs/api/services-api.md) | **F24** — contrato da API de Services |
+| [`docs/f24-report.md`](docs/f24-report.md) | **F24** — relatório final: modelo, API, BD, testes, auto-revisão, decisão de escopo de UI |
 | [`docs/adr/`](docs/adr/README.md) | ADR-001 … ADR-035 |
 | [`spikes/platform-integration/`](spikes/platform-integration/README.md) | **F19** — código do spike (removível), como correr os testes |
-| [`src/`](src) | **F20/F21/F22/F23** — código real do Na Pista (Categories/Products/Customers/Inventory/Orders), não removível |
+| [`src/`](src) | **F20/F21/F22/F23/F24** — código real do Na Pista (Categories/Products/Customers/Inventory/Orders/Services), não removível |
 
 ## Convenções deste blueprint
 - **DECIDIDO** — decorre do conceito oficial, do CLAUDE.md ou do código do Platform.
@@ -133,7 +144,7 @@ NA PISTA    → "O que pode fazer?" (produtos, stock, pedidos, clientes | servi�
 - **OPEN DECISION (OD-nn)** — não pode ser determinada com segurança a partir do conceito; nunca tratada como fechada.
 - **PG-nn** lacuna do Platform · **DV-nn** divergência encontrada · **R-nn** risco.
 
-## A correr (F20/F21/F22/F23)
+## A correr (F20/F21/F22/F23/F24)
 
 ```bash
 npm install
@@ -145,7 +156,7 @@ npm run dev                 # API em :4200
 # testes (precisam de um UL Platform real já a correr em :4000)
 npm run test:unit
 npm run test:integration    # precisa de NA_PISTA_DATABASE_URL real
-cd ../ul-platform && npm run f20:provision && npm run f21:provision && npm run f22:provision && npm run f23:provision   # fixtures reais
+cd ../ul-platform && npm run f20:provision && npm run f21:provision && npm run f22:provision && npm run f23:provision && npm run f24:provision   # fixtures reais
 cd ../na-pista && npm run test:e2e
 ```
 
