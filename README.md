@@ -57,6 +57,17 @@ Orders a confirmar em simultâneo por 7 unidades cada, contra um stock de 10 →
 stock final 3, um único movimento. 71/71 testes específicos de Orders; suite completa do `na-pista` (Orders +
 Inventory/Customers/Products/Categories das fases anteriores, inalterados) em 198/198.
 
+**F24A (decisões de domínio de Serviços): COMPLETE — ver [`docs/f24a-report.md`](docs/f24a-report.md).**
+Decision spike — **sem** Service/Professional/Scheduling/Appointment implementados. Fecha o modelo mínimo de
+`Service` (não um clone de Product: sem categorias, sem variantes, com `durationMinutes`), a representação de
+duração (`durationMinutes integer`, número JSON simples — excepção deliberada e fundamentada à convenção
+"dinheiro/quantidade = string decimal", já que um inteiro limitado não tem o problema de precisão de float que
+essa convenção resolve), preço/moeda reutilizando a F23A sem nenhuma decisão nova (`numeric(14,2)`, sem coluna
+de moeda), e as fronteiras Service/Professional/Scheduling/Appointment (Service não referencia Professional
+nem Customer; `professional_services` fica para a F25, aditivo, sem redesenhar Service). ADR-033..035. Pacote
+de decisão completo em [`docs/f24a-services-decisions.md`](docs/f24a-services-decisions.md) — a F24 pode
+implementar o catálogo de Serviços sem tomar nenhuma decisão de domínio nova.
+
 ## Em duas linhas
 
 ```
@@ -110,7 +121,9 @@ NA PISTA    → "O que pode fazer?" (produtos, stock, pedidos, clientes | servi�
 | [`docs/f23a-report.md`](docs/f23a-report.md) | **F23A** — relatório final do spike: decisões, validação, auto-revisão |
 | [`docs/api/orders-api.md`](docs/api/orders-api.md) | **F23** — contrato da API de Orders |
 | [`docs/f23-report.md`](docs/f23-report.md) | **F23** — relatório final: modelo, dinheiro, ciclo de vida, transacção, concorrência, testes, limitações |
-| [`docs/adr/`](docs/adr/README.md) | ADR-001 … ADR-032 |
+| [`docs/f24a-services-decisions.md`](docs/f24a-services-decisions.md) | **F24A** — pacote de decisões do domínio de Serviços, contrato para a F24 |
+| [`docs/f24a-report.md`](docs/f24a-report.md) | **F24A** — relatório final do spike: decisões, alternativas, auto-revisão |
+| [`docs/adr/`](docs/adr/README.md) | ADR-001 … ADR-035 |
 | [`spikes/platform-integration/`](spikes/platform-integration/README.md) | **F19** — código do spike (removível), como correr os testes |
 | [`src/`](src) | **F20/F21/F22/F23** — código real do Na Pista (Categories/Products/Customers/Inventory/Orders), não removível |
 
