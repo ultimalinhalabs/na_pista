@@ -153,6 +153,54 @@ export class TimezoneNotConfiguredError extends AppError {
   }
 }
 
+/** F27 (ADR-042): the Appointment referenced does not exist in this tenant. */
+export class AppointmentNotFoundError extends AppError {
+  constructor(message = "Appointment not found") {
+    super(404, "APPOINTMENT_NOT_FOUND", message);
+  }
+}
+
+/**
+ * F27 (ADR-044): the database exclusion constraint rejected the write —
+ * the Professional already has a non-canceled Appointment overlapping
+ * this interval. Raised ONLY from a real `23P01` on
+ * `appointments_professional_no_overlap` (never from an application-level
+ * pre-check), for both creation and rescheduling.
+ */
+export class AppointmentConflictError extends AppError {
+  constructor(message = "The professional already has an appointment overlapping this time") {
+    super(409, "APPOINTMENT_CONFLICT", message);
+  }
+}
+
+/** F27 (ADR-044): the requested start is not one of F26's `serviceStartTimes` for that local date — strict, no override (F27A §17/§18). */
+export class AppointmentOutsideAvailabilityError extends AppError {
+  constructor(message = "The requested time is outside the professional's availability for this service") {
+    super(409, "APPOINTMENT_OUTSIDE_AVAILABILITY", message);
+  }
+}
+
+/** F27 (ADR-043): a lifecycle/edit action attempted from a state that does not allow it (every action on a terminal COMPLETED/CANCELED Appointment). */
+export class InvalidAppointmentStateError extends AppError {
+  constructor(message = "This operation is not valid for the Appointment's current state") {
+    super(409, "INVALID_APPOINTMENT_STATE", message);
+  }
+}
+
+/** F27 (ADR-043): SCHEDULED -> COMPLETED is only allowed once `now >= start_at` (server clock, never client-supplied). */
+export class AppointmentCompletionTooEarlyError extends AppError {
+  constructor(message = "An appointment cannot be completed before its start time") {
+    super(409, "APPOINTMENT_COMPLETION_TOO_EARLY", message);
+  }
+}
+
+/** F27 (ADR-044): `startAt` is more than 365 days (absolute, inclusive) after the server's current time. */
+export class BookingHorizonExceededError extends AppError {
+  constructor(message = "Appointments cannot be booked more than 365 days in advance") {
+    super(400, "BOOKING_HORIZON_EXCEEDED", message);
+  }
+}
+
 /**
  * Postgres unique_violation (23505) walked through drizzle-orm's
  * `DrizzleQueryError.cause` chain — same pattern ul-platform's own
@@ -169,6 +217,26 @@ export function extractErrorCode(error: unknown): string | undefined {
 
 export function isUniqueViolationError(error: unknown): boolean {
   return extractErrorCode(error) === "23505";
+}
+
+/** The postgres.js `constraint_name` of the first error in drizzle's `cause` chain that carries one. */
+function extractConstraintName(error: unknown): string | undefined {
+  if (typeof error !== "object" || error === null) return undefined;
+  const name = (error as { constraint_name?: unknown }).constraint_name;
+  if (typeof name === "string") return name;
+  if ("cause" in error) return extractConstraintName((error as { cause: unknown }).cause);
+  return undefined;
+}
+
+/** F27 (ADR-044): Postgres exclusion_violation (23P01), optionally narrowed to one named constraint. */
+export function isExclusionViolationError(error: unknown, constraintName?: string): boolean {
+  if (extractErrorCode(error) !== "23P01") return false;
+  return constraintName === undefined || extractConstraintName(error) === constraintName;
+}
+
+/** Postgres deadlock_detected (40P01) — see `modules/appointments/service.ts` `mapBookingWriteError` for the one place it is given domain meaning. */
+export function isDeadlockError(error: unknown): boolean {
+  return extractErrorCode(error) === "40P01";
 }
 
 export function isConnectionError(error: unknown): boolean {

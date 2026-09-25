@@ -1,6 +1,6 @@
 # ADR-043 — Appointment Lifecycle & State Machine
 
-- **Estado:** Accepted — decision spike, no production code yet
+- **Estado:** Accepted — implemented (F27)
 - **Data:** 2026-09-25
 - **Phase:** F27A (spike)
 
@@ -107,3 +107,10 @@ cancellation-window policy, and possibly `confirmed_at`. None is built in F27.
 - (+) Any future state is safe by default with respect to double-booking.
 - (−) No-shows are recorded as cancellations-with-reason until `NO_SHOW` is added.
 - (−) No undo for completion/cancellation in F27.
+
+## Implementation note (F27)
+
+Implemented as decided. One error-code refinement, no semantic change: "complete before `start_at`" is
+reported as `409 APPOINTMENT_COMPLETION_TOO_EARLY` (the F27 brief's code) rather than the generic
+`409 INVALID_APPOINTMENT_STATE` named above — same status, same rule, a more specific code for clients.
+`INVALID_APPOINTMENT_STATE` keeps meaning "any action on a terminal appointment". See `docs/f27-report.md` §2.

@@ -1,6 +1,6 @@
 # ADR-042 — Appointment Domain Model
 
-- **Estado:** Accepted — decision spike, no production code yet
+- **Estado:** Accepted — implemented (F27)
 - **Data:** 2026-09-25
 - **Phase:** F27A (spike)
 

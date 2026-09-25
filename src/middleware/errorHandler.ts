@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import { ZodError } from "zod";
-import { AppError, isConnectionError, isUniqueViolationError, UpstreamUnavailableError } from "../shared/errors.js";
+import { AppError, extractErrorCode, isConnectionError, isExclusionViolationError, isUniqueViolationError, UpstreamUnavailableError } from "../shared/errors.js";
 import { logger } from "../shared/logger.js";
 import { fail } from "../shared/response.js";
 
@@ -32,9 +32,19 @@ export function errorHandler(error: unknown, req: Request, res: Response, _next:
     return fail(res, 409, "CONFLICT", "Resource already exists");
   }
 
+  // F27 (ADR-044): defense in depth — any exclusion violation a domain
+  // service did not already translate is still a 409, never a 500 that
+  // might tempt someone to log/return the raw constraint details.
+  if (isExclusionViolationError(error)) {
+    logger.info("http.request.error", { requestId: req.requestId, errorCode: "CONFLICT", status: 409, path: req.path });
+    return fail(res, 409, "CONFLICT", "Conflicting resource state");
+  }
+
   logger.error("http.request.unhandled_error", {
     requestId: req.requestId,
     path: req.path,
+    // SQLSTATE/driver code only (e.g. "40P01") — server log, never the response body.
+    code: extractErrorCode(error),
     message: error instanceof Error ? error.message : String(error),
   });
   return fail(res, 500, "INTERNAL_ERROR", "Unexpected error");

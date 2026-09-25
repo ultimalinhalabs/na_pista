@@ -9,4 +9,5 @@ export * from "./professionalServices.js";
 export * from "./organizationSettings.js";
 export * from "./professionalScheduleRules.js";
 export * from "./professionalScheduleExceptions.js";
+export * from "./appointments.js";
 export * from "./auditEvents.js";

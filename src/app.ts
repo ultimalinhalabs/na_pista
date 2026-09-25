@@ -4,6 +4,7 @@ import helmet from "helmet";
 import { env } from "./config/env.js";
 import { authenticate } from "./middleware/authenticate.js";
 import { errorHandler } from "./middleware/errorHandler.js";
+import { appointmentsRouter } from "./modules/appointments/routes.js";
 import { categoriesRouter } from "./modules/categories/routes.js";
 import { customersRouter } from "./modules/customers/routes.js";
 import { inventoryRouter } from "./modules/inventory/routes.js";
@@ -43,6 +44,7 @@ export function buildApp() {
     professionalsRouter,
     organizationSettingsRouter,
     schedulingRouter,
+    appointmentsRouter,
   );
 
   app.use(errorHandler);

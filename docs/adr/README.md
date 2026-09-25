@@ -48,6 +48,6 @@ e [`../decisions.md`](../decisions.md) (F19 — todas fechadas com evidência de
 | [039](ADR-039-scheduling-domain-model.md) | Scheduling Domain Model | Accepted — implemented (F26) | F26A |
 | [040](ADR-040-time-timezone-availability-semantics.md) | Time, Timezone & Availability Semantics | Accepted — implemented (F26) | F26A |
 | [041](ADR-041-scheduling-appointment-boundary.md) | Scheduling / Appointment Boundary | Accepted — implemented (F26) | F26A |
-| [042](ADR-042-appointment-domain-model.md) | Appointment Domain Model | Accepted — not yet implemented (F27) | F27A |
-| [043](ADR-043-appointment-lifecycle-state-machine.md) | Appointment Lifecycle & State Machine | Accepted — not yet implemented (F27) | F27A |
-| [044](ADR-044-appointment-concurrency-conflict-enforcement.md) | Appointment Concurrency & Booking Conflict Enforcement | Accepted — not yet implemented (F27) | F27A |
+| [042](ADR-042-appointment-domain-model.md) | Appointment Domain Model | Accepted — implemented (F27) | F27A |
+| [043](ADR-043-appointment-lifecycle-state-machine.md) | Appointment Lifecycle & State Machine | Accepted — implemented (F27) | F27A |
+| [044](ADR-044-appointment-concurrency-conflict-enforcement.md) | Appointment Concurrency & Booking Conflict Enforcement | Accepted — implemented (F27) | F27A |

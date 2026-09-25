@@ -64,6 +64,15 @@
  * update split (matching Professional's own shape) is justified, not
  * just copied. No `scheduling.delete` — removal is gated by
  * `scheduling.update`, never a separate lifecycle tier.
+ *
+ * F27 (ADR-043, docs/f27a-report.md §36): `appointments.create` gates
+ * `POST /appointments`; `appointments.update` gates EVERY mutation of an
+ * existing appointment — reschedule, notes, cancel AND complete — the
+ * `orders.update` precedent (every Order transition is one tier, F23); no
+ * demonstrated need for separate cancel/complete permissions. No
+ * `appointments.delete` — appointments are never deleted (cancel is a
+ * transition). STAFF read-only, consistent with every other module
+ * (frozen F27 decision).
  */
 export const ROLE_PERMISSIONS: Record<string, string[]> = {
   OWNER: [
@@ -94,6 +103,9 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     "scheduling.read",
     "scheduling.create",
     "scheduling.update",
+    "appointments.read",
+    "appointments.create",
+    "appointments.update",
   ],
   ADMIN: [
     "products.read",
@@ -123,6 +135,9 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     "scheduling.read",
     "scheduling.create",
     "scheduling.update",
+    "appointments.read",
+    "appointments.create",
+    "appointments.update",
   ],
   MANAGER: [
     "products.read",
@@ -149,6 +164,9 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     "scheduling.read",
     "scheduling.create",
     "scheduling.update",
+    "appointments.read",
+    "appointments.create",
+    "appointments.update",
   ],
   STAFF: [
     "products.read",
@@ -159,6 +177,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     "services.read",
     "professionals.read",
     "scheduling.read",
+    "appointments.read",
   ],
 };
 

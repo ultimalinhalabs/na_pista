@@ -1,6 +1,6 @@
 # ADR-044 — Appointment Concurrency & Booking Conflict Enforcement
 
-- **Estado:** Accepted — decision spike, no production code yet
+- **Estado:** Accepted — implemented (F27)
 - **Data:** 2026-09-25
 - **Phase:** F27A (spike)
 
@@ -196,3 +196,20 @@ Buffers (ADR-040 D11): store `blocked_end_at` (or buffer columns on `professiona
 buffered range instead — same constraint shape. Resources/rooms: an additional exclusion constraint on
 `(organization_id, resource_id, range)` where `resource_id IS NOT NULL`. Capacity > 1: counted admission
 under an advisory/row lock on a capacity row, replacing the constraint only for capacity-managed services.
+
+## Implementation note (F27)
+
+Implemented as decided (migration `0008_appointments_no_overlap.sql`). One error-code refinement, no semantic
+change: a start beyond the 365-day horizon is `400 BOOKING_HORIZON_EXCEEDED` (the F27 brief's code) instead of
+the generic `400 VALIDATION_ERROR` named in the transaction-boundary sketch above; a start in the past remains
+`400 VALIDATION_ERROR`. The cross-session waiting behaviour this ADR relied on was proven live in F27
+(`tests/integration/appointments.test.ts`, "proof of blocking"). See `docs/f27-report.md` §16–§17.
+
+**Error-mapping amendment found by F27's concurrency testing (documented, not silent).** Besides `23P01`, a
+racing overlapping writer can receive `40P01 deadlock_detected`: an exclusion constraint inserts its index
+entry before checking for conflicts, so two simultaneous overlapping writers can wait on each other and
+PostgreSQL aborts one after `deadlock_timeout`. Observed ~1 in 125 racing writers on this database (and once in
+the first E2E run, where the losers surfaced as HTTP 500). The invariant was never violated — only the loser's
+error was wrong. Resolution: a `40P01` raised by the guarded appointment INSERT/UPDATE is mapped to
+`409 APPOINTMENT_CONFLICT` (that statement can only wait on overlapping rows of the same Professional), still as
+a single attempt with no retry. The mapping table above is extended accordingly; the mechanism is unchanged.

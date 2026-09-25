@@ -4,6 +4,7 @@ import { recordAuditEvent } from "../audit/service.js";
 import { getCustomer } from "../customers/repository.js";
 import { getProduct } from "../products/repository.js";
 import { createMovement } from "../inventory/service.js";
+import { DEFAULT_CURRENCY } from "../../shared/money.js";
 import {
   CustomerArchivedError,
   EmptyOrderError,
@@ -38,18 +39,6 @@ export interface Actor {
 }
 
 type Tx = Pick<typeof db, "insert" | "select" | "update" | "delete">;
-
-/**
- * F23A (ADR-030): a real `TenantSettings`/organization-currency table does
- * not exist yet (confirmed: `src/db/schema/` has no such table). Using the
- * F23A-approved single supported currency directly, rather than inventing
- * a settings subsystem this phase doesn't need — documented as a known
- * limitation in `docs/f23-report.md`, not silently assumed. The moment a
- * real per-organization currency setting exists, this is the one line
- * that changes; `Order.currency` already snapshots whatever it resolves
- * to, so nothing else in this module needs to change.
- */
-const DEFAULT_CURRENCY = "AOA";
 
 /** F23 brief §5/§36: a product must exist, be ACTIVE, and have a price to be added to an Order — enforced at the moment an item is created, not on every subsequent read. */
 async function resolveOrderableProduct(tenant: TenantContext, productId: string, executor: Tx) {
