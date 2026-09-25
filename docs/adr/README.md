@@ -51,3 +51,9 @@ e [`../decisions.md`](../decisions.md) (F19 — todas fechadas com evidência de
 | [042](ADR-042-appointment-domain-model.md) | Appointment Domain Model | Accepted — implemented (F27) | F27A |
 | [043](ADR-043-appointment-lifecycle-state-machine.md) | Appointment Lifecycle & State Machine | Accepted — implemented (F27) | F27A |
 | [044](ADR-044-appointment-concurrency-conflict-enforcement.md) | Appointment Concurrency & Booking Conflict Enforcement | Accepted — implemented (F27) | F27A |
+| [045](ADR-045-appointment-multi-service-model.md) | Appointment Multi-Service Model | Accepted — not yet implemented (F28E) | F28A |
+| [046](ADR-046-appointment-occupied-interval-and-buffers.md) | Appointment Occupied Interval & Buffers | Accepted — not yet implemented (F28F) | F28A |
+| [047](ADR-047-appointment-participants-and-resources.md) | Additional Conflict Authorities: Participating Professionals & Resources (Locations deferred) | Accepted — not yet implemented (F28G/F28H) | F28A |
+| [048](ADR-048-appointment-no-show-lifecycle.md) | Appointment NO_SHOW Lifecycle | Accepted — not yet implemented (F28B) | F28A |
+| [049](ADR-049-appointment-idempotency.md) | Appointment Creation Idempotency (`Idempotency-Key`) | Accepted — not yet implemented (F28C) | F28A |
+| [050](ADR-050-appointment-event-outbox.md) | Transactional Outbox for Appointment Events | Accepted — not yet implemented (F28D) | F28A |
