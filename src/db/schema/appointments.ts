@@ -29,7 +29,10 @@ import { timestamps } from "./_helpers.js";
  * No Customer/Professional name snapshot (live records; edits are
  * corrections that should propagate).
  *
- * Lifecycle (ADR-043): SCHEDULED -> COMPLETED | CANCELED, both terminal.
+ * Lifecycle (ADR-043, extended by ADR-048/F28B): SCHEDULED -> COMPLETED |
+ * CANCELED | NO_SHOW, all terminal. NO_SHOW keeps occupying its interval —
+ * the exclusion constraint's predicate `status <> 'CANCELED'` already
+ * covers it, so the constraint is deliberately NOT changed.
  * The CHECKs below guarantee the row is never internally inconsistent
  * whatever code path writes it; transition LEGALITY lives in
  * `modules/appointments/lifecycle.ts`.
@@ -61,7 +64,7 @@ export const appointments = naPistaSchema.table(
     serviceId: uuid("service_id").notNull(),
     startAt: timestamp("start_at", { withTimezone: true }).notNull(),
     endAt: timestamp("end_at", { withTimezone: true }).notNull(),
-    status: text("status", { enum: ["SCHEDULED", "COMPLETED", "CANCELED"] }).notNull().default("SCHEDULED"),
+    status: text("status", { enum: ["SCHEDULED", "COMPLETED", "CANCELED", "NO_SHOW"] }).notNull().default("SCHEDULED"),
     serviceName: text("service_name").notNull(),
     servicePrice: numeric("service_price", { precision: 14, scale: 2 }),
     currency: text("currency").notNull(),
@@ -69,6 +72,7 @@ export const appointments = naPistaSchema.table(
     cancellationReason: text("cancellation_reason"),
     canceledAt: timestamp("canceled_at", { withTimezone: true }),
     completedAt: timestamp("completed_at", { withTimezone: true }),
+    noShowAt: timestamp("no_show_at", { withTimezone: true }),
     ...timestamps,
   },
   (table) => [
@@ -94,9 +98,10 @@ export const appointments = naPistaSchema.table(
       name: "appointments_service_org_fk",
     }),
     check("appointments_end_after_start", sql`${table.endAt} > ${table.startAt}`),
-    check("appointments_status_valid", sql`${table.status} IN ('SCHEDULED', 'COMPLETED', 'CANCELED')`),
+    check("appointments_status_valid", sql`${table.status} IN ('SCHEDULED', 'COMPLETED', 'CANCELED', 'NO_SHOW')`),
     check("appointments_canceled_at_matches_status", sql`(${table.status} = 'CANCELED') = (${table.canceledAt} IS NOT NULL)`),
     check("appointments_completed_at_matches_status", sql`(${table.status} = 'COMPLETED') = (${table.completedAt} IS NOT NULL)`),
+    check("appointments_no_show_at_matches_status", sql`(${table.status} = 'NO_SHOW') = (${table.noShowAt} IS NOT NULL)`),
     check("appointments_cancellation_reason_only_when_canceled", sql`${table.cancellationReason} IS NULL OR ${table.status} = 'CANCELED'`),
     check("appointments_service_price_non_negative", sql`${table.servicePrice} IS NULL OR ${table.servicePrice} >= 0`),
     check("appointments_currency_shape", sql`${table.currency} ~ '^[A-Z]{3}$'`),

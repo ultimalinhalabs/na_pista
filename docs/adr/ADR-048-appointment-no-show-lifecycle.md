@@ -1,6 +1,6 @@
 # ADR-048 — Appointment NO_SHOW Lifecycle
 
-- **Estado:** Accepted — decision spike, no production code yet
+- **Estado:** Accepted — implemented (F28B)
 - **Data:** 2026-09-25
 - **Phase:** F28A (spike) — implementation slice F28B
 
@@ -61,3 +61,11 @@ NO_SHOW rows exist (documented; otherwise convert them to COMPLETED/CANCELED by 
 
 - (+) Honest history; zero conflict-model change.
 - (−) A fourth status value that clients must accept.
+
+## Implementation note (F28B)
+
+Implemented as decided: migration `0009` (status CHECK with four values, `no_show_at` + consistency CHECK; exclusion
+constraint untouched), `POST …/no-show` (strict empty body), `lifecycle.ts` `no_show` action,
+`markAppointmentNoShow` (row lock, audit in-transaction, usage after commit), Console "Marcar como falta".
+Notes edits on a NO_SHOW appointment are rejected like on every terminal state (ADR-043's rule, unchanged).
+See `docs/f28b-report.md`.

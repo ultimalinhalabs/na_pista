@@ -5,7 +5,7 @@ import { requireTenantContext } from "../../tenancy/tenantContext.js";
 import { actorFromRequest } from "../../tenancy/actor.js";
 import { paramString } from "../../shared/params.js";
 import { ok } from "../../shared/response.js";
-import { bookableSlotsQuerySchema, cancelAppointmentSchema, createAppointmentSchema, listAppointmentsQuerySchema, updateAppointmentSchema } from "./schemas.js";
+import { bookableSlotsQuerySchema, cancelAppointmentSchema, createAppointmentSchema, listAppointmentsQuerySchema, noShowAppointmentSchema, updateAppointmentSchema } from "./schemas.js";
 import {
   cancelAppointment,
   completeAppointment,
@@ -13,6 +13,7 @@ import {
   getAppointmentOrThrow,
   getBookableSlotsOrThrow,
   listAppointmentsOrThrow,
+  markAppointmentNoShow,
   updateAppointmentOrThrow,
 } from "./service.js";
 
@@ -20,7 +21,7 @@ import {
  * F27 (F27A §40): organization-scoped, gated by tenant context +
  * `catalog.enabled` (ADR-022 reuse) + `appointments.*` permission /
  * `catalog.*` scope. Lifecycle transitions are dedicated endpoints
- * (`/cancel`, `/complete`) — the Orders precedent — never a writable
+ * (`/cancel`, `/complete`, `/no-show`) — the Orders precedent — never a writable
  * `status` field. No DELETE: appointments are never deleted.
  */
 export const appointmentsRouter = Router();
@@ -94,6 +95,21 @@ appointmentsRouter.post(
   async (req, res, next) => {
     try {
       ok(res, await completeAppointment(req.tenant!, actorFromRequest(req), req.requestId, paramString(req.params.appointmentId)!));
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+// F28B (ADR-048): SCHEDULED -> NO_SHOW, same gate as cancel/complete.
+appointmentsRouter.post(
+  "/organizations/:organizationId/appointments/:appointmentId/no-show",
+  ...GATE,
+  requireAuthorized("appointments.update", "catalog.write"),
+  async (req, res, next) => {
+    try {
+      noShowAppointmentSchema.parse(req.body ?? {});
+      ok(res, await markAppointmentNoShow(req.tenant!, actorFromRequest(req), req.requestId, paramString(req.params.appointmentId)!));
     } catch (error) {
       next(error);
     }

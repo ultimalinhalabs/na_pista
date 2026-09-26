@@ -383,6 +383,40 @@ export async function completeAppointment(tenant: TenantContext, actor: Actor, r
 }
 
 /**
+ * SCHEDULED -> NO_SHOW (ADR-048, F28B): only once the SERVER clock reaches
+ * `start_at`, no upper deadline, terminal. Keeps occupying its interval —
+ * no constraint change (predicate `status <> 'CANCELED'`). Same row-lock
+ * serialization as cancel/complete: a racing second transition sees the
+ * real state and gets INVALID_APPOINTMENT_STATE. Audit in the same
+ * transaction; usage only after commit.
+ */
+export async function markAppointmentNoShow(tenant: TenantContext, actor: Actor, requestId: string | undefined, id: string, options: ClockOptions = {}) {
+  const row = await db.transaction(async (tx) => {
+    const current = await getAppointmentForUpdate(tenant, id, tx);
+    if (!current) throw new AppointmentNotFoundError();
+    const now = options.now ?? new Date();
+    assertTransition(current.status, "no_show", { now, startAt: current.startAt });
+    const updated = await updateAppointment(tenant, id, { status: "NO_SHOW", noShowAt: now }, tx);
+    await recordAuditEvent(
+      {
+        organizationId: tenant.organizationId,
+        actorType: actor.type,
+        actorId: actor.id,
+        action: "appointment.no_show",
+        resourceType: "appointment",
+        resourceId: id,
+        requestId,
+      },
+      tx,
+    );
+    return updated;
+  });
+
+  await recordUsage(tenant.organizationId, `appointment.no_show:${id}`, { resourceType: "appointment", resourceId: id }, requestId);
+  return toAppointmentDto(row);
+}
+
+/**
  * ADR-040 "bookable = working − appointment conflicts", for ONE local
  * date and ONE Service. Same preconditions/errors as F26 availability
  * (timezone 409, archived 409, missing/not-associated 404). ADVISORY: a

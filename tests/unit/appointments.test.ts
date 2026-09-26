@@ -9,6 +9,7 @@ import {
   MAX_APPOINTMENT_LIST_DAYS,
   bookableSlotsQuerySchema,
   cancelAppointmentSchema,
+  noShowAppointmentSchema,
   createAppointmentSchema,
   listAppointmentsQuerySchema,
   updateAppointmentSchema,
@@ -17,6 +18,7 @@ import { buildBookingSnapshot } from "../../src/modules/appointments/snapshot.js
 import { addDays, inclusiveDayCount, localDateWindow, localToInstant, minutesBetween, toLocal } from "../../src/modules/appointments/time.js";
 import {
   AppointmentCompletionTooEarlyError,
+  AppointmentNoShowTooEarlyError,
   BookingHorizonExceededError,
   InvalidAppointmentStateError,
   ValidationError,
@@ -372,7 +374,7 @@ test("listAppointmentsQuerySchema: from/to REQUIRED; max 31 inclusive days; to >
 
 test("listAppointmentsQuerySchema: filters validated; impossible dates rejected; unknown params rejected", () => {
   assert.equal(listAppointmentsQuerySchema.safeParse({ from: "2026-10-01", to: "2026-10-01", status: "CANCELED", professionalId: UUID, customerId: UUID, serviceId: UUID }).success, true);
-  assert.equal(listAppointmentsQuerySchema.safeParse({ from: "2026-10-01", to: "2026-10-01", status: "NO_SHOW" }).success, false);
+  assert.equal(listAppointmentsQuerySchema.safeParse({ from: "2026-10-01", to: "2026-10-01", status: "CONFIRMED" }).success, false, "no CONFIRMED state exists (F28B made NO_SHOW valid, ADR-048)");
   assert.equal(listAppointmentsQuerySchema.safeParse({ from: "2026-02-30", to: "2026-03-01" }).success, false);
   assert.equal(listAppointmentsQuerySchema.safeParse({ from: "2026-10-01", to: "2026-10-01", organizationId: UUID }).success, false);
 });
@@ -434,4 +436,57 @@ test("errorHandler: an untranslated exclusion violation is a 409 CONFLICT with a
   assert.equal(captured.status, 409);
   assert.deepEqual(captured.body, { error: { code: "CONFLICT", message: "Conflicting resource state" } });
   assert.doesNotMatch(JSON.stringify(captured.body), /appointments_professional_no_overlap|exclusion|insert/i);
+});
+
+// ---------------- F28B — NO_SHOW (ADR-048) ----------------
+
+test("NO_SHOW: SCHEDULED -> no_show BEFORE start_at -> AppointmentNoShowTooEarlyError (409 APPOINTMENT_NO_SHOW_TOO_EARLY)", () => {
+  const startAt = new Date("2026-10-05T08:00:00Z");
+  const error = (() => {
+    try {
+      assertTransition("SCHEDULED", "no_show", { now: new Date("2026-10-05T07:59:00Z"), startAt });
+    } catch (e) {
+      return e;
+    }
+  })();
+  assert.ok(error instanceof AppointmentNoShowTooEarlyError);
+  assert.equal(error.statusCode, 409);
+  assert.equal(error.code, "APPOINTMENT_NO_SHOW_TOO_EARLY");
+});
+
+test("NO_SHOW: exactly at start_at and any time after (no upper deadline) -> NO_SHOW", () => {
+  const startAt = new Date("2026-10-05T08:00:00Z");
+  assert.equal(assertTransition("SCHEDULED", "no_show", { now: startAt, startAt }), "NO_SHOW");
+  assert.equal(assertTransition("SCHEDULED", "no_show", { now: new Date("2026-10-05T08:01:00Z"), startAt }), "NO_SHOW");
+  assert.equal(assertTransition("SCHEDULED", "no_show", { now: new Date("2027-10-05T08:00:00Z"), startAt }), "NO_SHOW", "a year later is still allowed");
+});
+
+test("NO_SHOW: COMPLETED/CANCELED -> no_show is INVALID_APPOINTMENT_STATE (never too-early, even before start)", () => {
+  const context = { now: new Date("2026-01-01T00:00:00Z"), startAt: new Date("2026-10-05T08:00:00Z") };
+  for (const status of ["COMPLETED", "CANCELED"] as const) {
+    assert.throws(() => assertTransition(status, "no_show", context), InvalidAppointmentStateError, status);
+  }
+});
+
+test("NO_SHOW is terminal: no_show again, cancel, complete, reschedule and notes update are all INVALID_APPOINTMENT_STATE", () => {
+  const context = { now: new Date("2030-01-01T00:00:00Z"), startAt: new Date("2026-01-01T00:00:00Z") };
+  for (const action of ["no_show", "cancel", "complete", "reschedule", "update"] as const) {
+    assert.throws(() => assertTransition("NO_SHOW", action, context), InvalidAppointmentStateError, action);
+  }
+  assert.equal(isTerminal("NO_SHOW"), true);
+});
+
+test("NO_SHOW keeps occupying the interval (mirrors the unchanged DB predicate status <> 'CANCELED')", () => {
+  assert.equal(occupiesTime("NO_SHOW"), true);
+});
+
+test("noShowAppointmentSchema: absent body / {} accepted; any field rejected (.strict())", () => {
+  assert.equal(noShowAppointmentSchema.safeParse({}).success, true);
+  for (const body of [{ reason: "x" }, { status: "NO_SHOW" }, { noShowAt: "2026-10-05T08:00:00Z" }, { now: "2026-10-05T08:00:00Z" }]) {
+    assert.equal(noShowAppointmentSchema.safeParse(body).success, false, JSON.stringify(body));
+  }
+});
+
+test("list filter accepts status=NO_SHOW (F28B)", () => {
+  assert.equal(listAppointmentsQuerySchema.safeParse({ from: "2026-10-01", to: "2026-10-01", status: "NO_SHOW" }).success, true);
 });

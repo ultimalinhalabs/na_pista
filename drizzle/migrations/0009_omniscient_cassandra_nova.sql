@@ -1,0 +1,4 @@
+ALTER TABLE "na_pista"."appointments" DROP CONSTRAINT "appointments_status_valid";--> statement-breakpoint
+ALTER TABLE "na_pista"."appointments" ADD COLUMN "no_show_at" timestamp with time zone;--> statement-breakpoint
+ALTER TABLE "na_pista"."appointments" ADD CONSTRAINT "appointments_no_show_at_matches_status" CHECK (("na_pista"."appointments"."status" = 'NO_SHOW') = ("na_pista"."appointments"."no_show_at" IS NOT NULL));--> statement-breakpoint
+ALTER TABLE "na_pista"."appointments" ADD CONSTRAINT "appointments_status_valid" CHECK ("na_pista"."appointments"."status" IN ('SCHEDULED', 'COMPLETED', 'CANCELED', 'NO_SHOW'));

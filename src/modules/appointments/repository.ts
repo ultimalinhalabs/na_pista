@@ -124,7 +124,7 @@ export async function listOccupyingForProfessional(tenant: TenantContext, profes
 }
 
 export type AppointmentPatch = Partial<
-  Pick<AppointmentRow, "professionalId" | "startAt" | "endAt" | "notes" | "status" | "cancellationReason" | "canceledAt" | "completedAt">
+  Pick<AppointmentRow, "professionalId" | "startAt" | "endAt" | "notes" | "status" | "cancellationReason" | "canceledAt" | "completedAt" | "noShowAt">
 >;
 
 /** A time/professional change can raise `23P01` exactly like an insert — the constraint is checked on every new row version. */

@@ -20,12 +20,14 @@ import {
   getBookableSlotsOrThrow,
   listAppointmentsOrThrow,
   mapBookingWriteError,
+  markAppointmentNoShow,
   updateAppointmentOrThrow,
 } from "../../src/modules/appointments/service.js";
 import { addDays, localToInstant, toLocal } from "../../src/modules/appointments/time.js";
 import {
   AppointmentCompletionTooEarlyError,
   AppointmentConflictError,
+  AppointmentNoShowTooEarlyError,
   AppointmentNotFoundError,
   AppointmentOutsideAvailabilityError,
   BookingHorizonExceededError,
@@ -933,4 +935,187 @@ test("CONCURRENCY stress (regression for the F27 deadlock finding): 20 rounds x 
   const unexpected = losers.filter((error) => !(error instanceof AppointmentConflictError));
   assert.deepEqual(unexpected.map((error) => String((error as Error).message).slice(0, 80)), []);
   assertNoOverlap(await occupyingRows(org, seed.professional.id));
+});
+
+// ======================= F28B — NO_SHOW (ADR-048) =======================
+
+/** An appointment whose start is in the past (created with an older "now" — the only way a past booking can exist in tests). */
+async function pastAppointment(org: Org, seed: Awaited<ReturnType<typeof seedBookable>>, time = "09:00") {
+  const date = addDays(toLocal(new Date(), TZ).date, -1);
+  const startAt = at(time, date);
+  const oldNow = new Date(startAt.getTime() - 86_400_000);
+  const appointment = await book(org, seed, startAt, { now: oldNow });
+  return { appointment, startAt, date, oldNow };
+}
+
+test("NO_SHOW: persists status NO_SHOW and no_show_at (= server 'now'); other lifecycle timestamps stay null", async () => {
+  const org = await seedOrg();
+  const seed = await seedBookable(org);
+  const { appointment, startAt } = await pastAppointment(org, seed);
+  const now = new Date(startAt.getTime() + 20 * 60_000);
+  const marked = await markAppointmentNoShow(org, actor, "req-ns", appointment.id, { now });
+  assert.equal(marked.status, "NO_SHOW");
+  assert.equal(marked.noShowAt!.toISOString(), now.toISOString());
+  const [row] = await db.select().from(appointments).where(eq(appointments.id, appointment.id));
+  assert.equal(row!.status, "NO_SHOW");
+  assert.equal(row!.noShowAt!.toISOString(), now.toISOString());
+  assert.equal(row!.canceledAt, null);
+  assert.equal(row!.completedAt, null);
+});
+
+test("NO_SHOW DB CHECKs: status NO_SHOW requires no_show_at; no_show_at is forbidden on any other status (raw writes)", async () => {
+  const org = await seedOrg();
+  const seed = await seedBookable(org);
+  const a = await book(org, seed, at("09:00"));
+  const noTimestamp = await db.update(appointments).set({ status: "NO_SHOW" }).where(eq(appointments.id, a.id)).catch((e) => e);
+  assert.match(String(noTimestamp.cause?.message ?? noTimestamp), /appointments_no_show_at_matches_status/);
+  const timestampOnScheduled = await db.update(appointments).set({ noShowAt: new Date() }).where(eq(appointments.id, a.id)).catch((e) => e);
+  assert.match(String(timestampOnScheduled.cause?.message ?? timestampOnScheduled), /appointments_no_show_at_matches_status/);
+  assert.equal((await getAppointmentOrThrow(org, a.id)).status, "SCHEDULED", "nothing persisted");
+});
+
+test("NO_SHOW before start_at -> AppointmentNoShowTooEarlyError; the row is untouched", async () => {
+  const org = await seedOrg();
+  const seed = await seedBookable(org);
+  const a = await book(org, seed, at("09:00"));
+  await assert.rejects(() => markAppointmentNoShow(org, actor, "req", a.id), AppointmentNoShowTooEarlyError);
+  const reread = await getAppointmentOrThrow(org, a.id);
+  assert.equal(reread.status, "SCHEDULED");
+  assert.equal(reread.noShowAt, null);
+});
+
+test("NO_SHOW is terminal and cannot be reverted: no-show again, cancel, complete, reschedule, notes -> INVALID_APPOINTMENT_STATE", async () => {
+  const org = await seedOrg();
+  const seed = await seedBookable(org);
+  const { appointment, startAt } = await pastAppointment(org, seed);
+  const later = new Date(startAt.getTime() + 3_600_000);
+  await markAppointmentNoShow(org, actor, "req", appointment.id, { now: later });
+  await assert.rejects(() => markAppointmentNoShow(org, actor, "req", appointment.id, { now: later }), InvalidAppointmentStateError);
+  await assert.rejects(() => cancelAppointment(org, actor, "req", appointment.id, {}), InvalidAppointmentStateError);
+  await assert.rejects(() => completeAppointment(org, actor, "req", appointment.id, { now: later }), InvalidAppointmentStateError);
+  await assert.rejects(() => updateAppointmentOrThrow(org, actor, "req", appointment.id, { startAt: at("14:00") }), InvalidAppointmentStateError);
+  await assert.rejects(() => updateAppointmentOrThrow(org, actor, "req", appointment.id, { notes: "x" }), InvalidAppointmentStateError);
+  assert.equal((await getAppointmentOrThrow(org, appointment.id)).status, "NO_SHOW");
+});
+
+test("COMPLETED/CANCELED -> no-show is INVALID_APPOINTMENT_STATE", async () => {
+  const org = await seedOrg();
+  const seed = await seedBookable(org);
+  const { appointment: a, startAt } = await pastAppointment(org, seed, "09:00");
+  const { appointment: b } = await pastAppointment(org, seed, "11:00");
+  const later = new Date(startAt.getTime() + 6 * 3_600_000);
+  await completeAppointment(org, actor, "req", a.id, { now: later });
+  await cancelAppointment(org, actor, "req", b.id, {});
+  await assert.rejects(() => markAppointmentNoShow(org, actor, "req", a.id, { now: later }), InvalidAppointmentStateError);
+  await assert.rejects(() => markAppointmentNoShow(org, actor, "req", b.id, { now: later }), InvalidAppointmentStateError);
+});
+
+test("NO_SHOW keeps occupying the interval: a booking over it -> APPOINTMENT_CONFLICT (DB constraint unchanged); CANCELED still releases", async () => {
+  const org = await seedOrg();
+  const seed = await seedBookable(org);
+  const { appointment, startAt, date, oldNow } = await pastAppointment(org, seed, "09:00");
+  await markAppointmentNoShow(org, actor, "req", appointment.id, { now: new Date(startAt.getTime() + 60_000) });
+  await assert.rejects(() => book(org, seed, at("09:00", date), { now: oldNow }), AppointmentConflictError);
+  await assert.rejects(() => book(org, seed, at("09:30", date), { now: oldNow }), AppointmentConflictError);
+
+  const { appointment: other } = await pastAppointment(org, seed, "14:00");
+  await cancelAppointment(org, actor, "req", other.id, {});
+  const rebooked = await book(org, seed, at("14:00", date), { now: oldNow });
+  assert.equal(rebooked.status, "SCHEDULED", "CANCELED still releases its interval");
+});
+
+test("NO_SHOW audit: appointment.no_show written in the same transaction, with the request id", async () => {
+  const org = await seedOrg();
+  const seed = await seedBookable(org);
+  const { appointment, startAt } = await pastAppointment(org, seed);
+  await markAppointmentNoShow(org, actor, "req-no-show-audit", appointment.id, { now: new Date(startAt.getTime() + 60_000) });
+  const rows = await db.select().from(auditEvents).where(and(eq(auditEvents.resourceId, appointment.id), eq(auditEvents.action, "appointment.no_show")));
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0]!.requestId, "req-no-show-audit");
+  assert.equal(rows[0]!.resourceType, "appointment");
+});
+
+test("NO_SHOW audit failure (real NOT NULL violation inside the service transaction) -> rollback: still SCHEDULED, no no_show_at, NO usage", async () => {
+  const org = await seedOrg();
+  const seed = await seedBookable(org);
+  const { appointment, startAt } = await pastAppointment(org, seed);
+  const brokenActor = { type: "user" as const, id: null as unknown as string }; // audit_events.actor_id is NOT NULL
+  const usageCalls = await countUsageCalls(org.organizationId, () =>
+    markAppointmentNoShow(org, brokenActor, "req", appointment.id, { now: new Date(startAt.getTime() + 60_000) }),
+  );
+  assert.equal(usageCalls, 0);
+  const reread = await getAppointmentOrThrow(org, appointment.id);
+  assert.equal(reread.status, "SCHEDULED");
+  assert.equal(reread.noShowAt, null);
+  const audits = await db.select().from(auditEvents).where(and(eq(auditEvents.resourceId, appointment.id), eq(auditEvents.action, "appointment.no_show")));
+  assert.equal(audits.length, 0);
+});
+
+test("NO_SHOW usage: +1 only after a committed transition; 0 for too-early, invalid state, unknown appointment", async () => {
+  const org = await seedOrg();
+  const seed = await seedBookable(org);
+  const future = await book(org, seed, at("09:00"));
+  assert.equal(await countUsageCalls(org.organizationId, () => markAppointmentNoShow(org, actor, "req", future.id)), 0, "too early");
+  const { appointment, startAt } = await pastAppointment(org, seed);
+  const now = new Date(startAt.getTime() + 60_000);
+  assert.equal(await countUsageCalls(org.organizationId, () => markAppointmentNoShow(org, actor, "req", appointment.id, { now })), 1, "committed");
+  assert.equal(await countUsageCalls(org.organizationId, () => markAppointmentNoShow(org, actor, "req", appointment.id, { now })), 0, "invalid state");
+  assert.equal(await countUsageCalls(org.organizationId, () => markAppointmentNoShow(org, actor, "req", randomUUID(), { now })), 0, "not found");
+});
+
+test("NO_SHOW tenant isolation: another organization cannot mark it (AppointmentNotFoundError) and the row is untouched", async () => {
+  const orgA = await seedOrg();
+  const orgB = await seedOrg();
+  const seed = await seedBookable(orgA);
+  const { appointment, startAt } = await pastAppointment(orgA, seed);
+  await assert.rejects(() => markAppointmentNoShow(orgB, actor, "req", appointment.id, { now: new Date(startAt.getTime() + 60_000) }), AppointmentNotFoundError);
+  assert.equal((await getAppointmentOrThrow(orgA, appointment.id)).status, "SCHEDULED");
+});
+
+test("CONCURRENCY NO_SHOW x2: exactly one NO_SHOW, the other INVALID_APPOINTMENT_STATE, exactly one audit row", async () => {
+  const org = await seedOrg();
+  const seed = await seedBookable(org);
+  const { appointment, startAt } = await pastAppointment(org, seed);
+  const now = new Date(startAt.getTime() + 60_000);
+  const { fulfilled, rejected } = split(
+    await Promise.allSettled([markAppointmentNoShow(org, actor, "r1", appointment.id, { now }), markAppointmentNoShow(org, actor, "r2", appointment.id, { now })]),
+  );
+  assert.equal(fulfilled.length, 1);
+  assert.ok(rejected[0] instanceof InvalidAppointmentStateError);
+  const audits = await db.select().from(auditEvents).where(and(eq(auditEvents.resourceId, appointment.id), eq(auditEvents.action, "appointment.no_show")));
+  assert.equal(audits.length, 1);
+});
+
+test("CONCURRENCY NO_SHOW vs cancel: serialized by the row lock — exactly one transition applied, final state matches it", async () => {
+  const org = await seedOrg();
+  const seed = await seedBookable(org);
+  const { appointment, startAt } = await pastAppointment(org, seed);
+  const now = new Date(startAt.getTime() + 60_000);
+  const [noShow, cancel] = await Promise.allSettled([markAppointmentNoShow(org, actor, "r1", appointment.id, { now }), cancelAppointment(org, actor, "r2", appointment.id, {})]);
+  assert.equal([noShow, cancel].filter((r) => r.status === "fulfilled").length, 1, "exactly one transition wins");
+  const loser = [noShow, cancel].find((r) => r.status === "rejected") as PromiseRejectedResult;
+  assert.ok(loser.reason instanceof InvalidAppointmentStateError);
+  const final = await getAppointmentOrThrow(org, appointment.id);
+  assert.equal(final.status, noShow.status === "fulfilled" ? "NO_SHOW" : "CANCELED");
+  assert.equal(final.noShowAt !== null, final.status === "NO_SHOW");
+  assert.equal(final.canceledAt !== null, final.status === "CANCELED");
+});
+
+test("CONCURRENCY NO_SHOW vs complete: exactly one valid transition; the row never has both timestamps; one transition audit", async () => {
+  const org = await seedOrg();
+  const seed = await seedBookable(org);
+  const { appointment, startAt } = await pastAppointment(org, seed);
+  const now = new Date(startAt.getTime() + 60_000);
+  const [noShow, complete] = await Promise.allSettled([markAppointmentNoShow(org, actor, "r1", appointment.id, { now }), completeAppointment(org, actor, "r2", appointment.id, { now })]);
+  assert.equal([noShow, complete].filter((r) => r.status === "fulfilled").length, 1);
+  const loser = [noShow, complete].find((r) => r.status === "rejected") as PromiseRejectedResult;
+  assert.ok(loser.reason instanceof InvalidAppointmentStateError);
+  const final = await getAppointmentOrThrow(org, appointment.id);
+  assert.ok(["NO_SHOW", "COMPLETED"].includes(final.status));
+  assert.ok(!(final.noShowAt !== null && final.completedAt !== null));
+  const transitions = await db
+    .select()
+    .from(auditEvents)
+    .where(and(eq(auditEvents.resourceId, appointment.id), sql`${auditEvents.action} in ('appointment.no_show', 'appointment.completed')`));
+  assert.equal(transitions.length, 1);
 });

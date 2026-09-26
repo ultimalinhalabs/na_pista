@@ -71,6 +71,9 @@ export const cancelAppointmentSchema = z
   })
   .strict();
 
+/** F28B (ADR-048): `POST …/no-show` takes no input — an absent body or `{}` only; any field is rejected (`.strict()`). */
+export const noShowAppointmentSchema = z.object({}).strict();
+
 /** F27A §41: listing is ALWAYS bounded — both dates required, at most 31 local days inclusive. */
 export const MAX_APPOINTMENT_LIST_DAYS = 31;
 

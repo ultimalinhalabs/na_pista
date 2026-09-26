@@ -194,6 +194,13 @@ export class AppointmentCompletionTooEarlyError extends AppError {
   }
 }
 
+/** F28B (ADR-048): SCHEDULED -> NO_SHOW is only allowed once `now >= start_at` (server clock, never client-supplied). */
+export class AppointmentNoShowTooEarlyError extends AppError {
+  constructor(message = "An appointment cannot be marked as a no-show before its start time") {
+    super(409, "APPOINTMENT_NO_SHOW_TOO_EARLY", message);
+  }
+}
+
 /** F27 (ADR-044): `startAt` is more than 365 days (absolute, inclusive) after the server's current time. */
 export class BookingHorizonExceededError extends AppError {
   constructor(message = "Appointments cannot be booked more than 365 days in advance") {

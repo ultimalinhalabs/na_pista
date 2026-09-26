@@ -9,7 +9,7 @@ no raw Postgres errors ever returned.
 |---|---|---|---|---|---|
 | `appointments.read` | ✅ | ✅ | ✅ | ✅ | `catalog.read` |
 | `appointments.create` | ✅ | ✅ | ✅ | ❌ | `catalog.write` |
-| `appointments.update` (reschedule, notes, cancel, complete) | ✅ | ✅ | ✅ | ❌ | `catalog.write` |
+| `appointments.update` (reschedule, notes, cancel, complete, no-show) | ✅ | ✅ | ✅ | ❌ | `catalog.write` |
 
 There is no `appointments.delete` and no `DELETE` route — appointments are never deleted.
 
@@ -34,6 +34,7 @@ There is no `appointments.delete` and no `DELETE` route — appointments are nev
     "cancellationReason": null,
     "canceledAt": null,
     "completedAt": null,
+    "noShowAt": null,
     "createdAt": "…",
     "updatedAt": "…"
   }
@@ -46,7 +47,11 @@ There is no `appointments.delete` and no `DELETE` route — appointments are nev
   moment; later Service edits never change it.
 - `serviceName`, `servicePrice` (decimal string, or `null` if the Service was unpriced), `currency`: booking-time
   snapshots. `serviceId` stays a reference.
-- `status`: `SCHEDULED` → `COMPLETED` | `CANCELED` (both terminal). No other states.
+- `status`: `SCHEDULED` | `COMPLETED` | `CANCELED` | `NO_SHOW`. Lifecycle: `SCHEDULED` → `COMPLETED` | `CANCELED` |
+  `NO_SHOW` — all three terminal (no undo, no transition out). Only `CANCELED` releases the time slot; `COMPLETED` and
+  `NO_SHOW` keep occupying it. Clients that switch on `status` must handle `NO_SHOW` (added in F28B, ADR-048).
+- `canceledAt` / `completedAt` / `noShowAt`: set exactly when `status` is `CANCELED` / `COMPLETED` / `NO_SHOW`
+  (database CHECKs), otherwise `null`.
 
 ## `POST /v1/organizations/:organizationId/appointments`
 
@@ -72,7 +77,7 @@ Permission `appointments.read`. Query (`.strict()`):
 |---|---|---|
 | `from`, `to` | yes | organization-local dates `YYYY-MM-DD`, inclusive, `to ≥ from`, **at most 31 days** |
 | `professionalId`, `customerId`, `serviceId` | no | UUIDs; foreign/unknown ids simply match nothing |
-| `status` | no | `SCHEDULED` \| `COMPLETED` \| `CANCELED` (default: all) |
+| `status` | no | `SCHEDULED` \| `COMPLETED` \| `CANCELED` \| `NO_SHOW` (default: all) |
 | `limit` | no | default 200, max 500 |
 
 Returns appointments **overlapping** `[local midnight of from, local midnight of to + 1)`, ordered by
@@ -111,6 +116,23 @@ Permission `appointments.update`. No body. `SCHEDULED → COMPLETED` only once t
 `startAt` (the end need not have passed); otherwise `409 APPOINTMENT_COMPLETION_TOO_EARLY`. A completed
 appointment keeps occupying its interval.
 
+## `POST …/appointments/:appointmentId/no-show` (F28B, ADR-048)
+
+Permission `appointments.update` (OWNER/ADMIN/MANAGER; STAFF → `403`); service credentials need `catalog.write`;
+gated by `catalog.enabled`. **No body**: an absent body or `{}` only — any field → `400 VALIDATION_ERROR`.
+
+`SCHEDULED → NO_SHOW` only, and only once the **server** clock has reached `startAt` (otherwise
+`409 APPOINTMENT_NO_SHOW_TOO_EARLY`). No upper deadline — a no-show may be recorded any time later. Sets `noShowAt`
+(server time). Terminal: any later cancel/complete/no-show/reschedule/notes edit → `409 INVALID_APPOINTMENT_STATE`; from
+`COMPLETED`/`CANCELED` → `409 INVALID_APPOINTMENT_STATE`. The appointment **keeps occupying** its interval (the
+exclusion constraint's predicate `status <> 'CANCELED'` is unchanged), so a new booking over it gets
+`409 APPOINTMENT_CONFLICT`. Audit `appointment.no_show` in the same transaction; usage (`api_requests`) after commit.
+`200` with the appointment:
+
+```json
+{ "data": { "id": "…", "status": "NO_SHOW", "noShowAt": "2026-10-05T08:20:00.000Z", "canceledAt": null, "completedAt": null, "…": "…" } }
+```
+
 ## `GET /v1/organizations/:organizationId/professionals/:professionalId/bookable-slots`
 
 Permission `appointments.read`. Query: `date=YYYY-MM-DD` (organization-local) and `serviceId` — both required.
@@ -142,8 +164,9 @@ for unknown/not-associated. Not audited, not metered.
 | 409 | `APPOINTMENT_OUTSIDE_AVAILABILITY` | start is not a valid F26 service start time for that local date (no override exists — add a Scheduling exception instead) |
 | 409 | `TIMEZONE_NOT_CONFIGURED` | organization has no timezone |
 | 409 | `CUSTOMER_ARCHIVED` / `PROFESSIONAL_ARCHIVED` / `SERVICE_ARCHIVED` | booking or rescheduling with an archived resource |
-| 409 | `INVALID_APPOINTMENT_STATE` | any action on a COMPLETED/CANCELED appointment |
+| 409 | `INVALID_APPOINTMENT_STATE` | any action on a COMPLETED/CANCELED/NO_SHOW appointment |
 | 409 | `APPOINTMENT_COMPLETION_TOO_EARLY` | complete before `startAt` |
+| 409 | `APPOINTMENT_NO_SHOW_TOO_EARLY` | no-show before `startAt` |
 | 409 | `CONFLICT` | defensive fallback for any other exclusion violation (never exposes the constraint) |
 
 ## Idempotency
@@ -160,5 +183,5 @@ give you:
 - **Retry of a request that genuinely failed** (e.g. validation, timeout before commit): safe to retry — nothing
   was written.
 
-Cancel/complete are naturally safe to repeat (the second call gets `409 INVALID_APPOINTMENT_STATE`; nothing is
+Cancel/complete/no-show are naturally safe to repeat (the second call gets `409 INVALID_APPOINTMENT_STATE`; nothing is
 applied twice). Public self-booking or third-party integrations must add a real `Idempotency-Key` (deferred).
