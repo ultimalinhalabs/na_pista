@@ -18,7 +18,10 @@
     "test:unit": "node --import tsx --test tests/unit/*.test.ts",
     "test:integration": "node --import tsx --test --test-concurrency=1 tests/integration/*.test.ts",
     "test:e2e": "node --import tsx --test --test-force-exit --test-timeout=90000 --test-concurrency=1 tests/e2e/*.test.ts",
-    "test": "npm run test:unit && npm run test:integration && npm run test:e2e"
+    "test": "npm run test:unit && npm run test:integration && npm run test:e2e",
+    "mv:server": "tsx scripts/manual-validation-server.ts",
+    "mv:seed": "tsx scripts/manual-validation-seed.ts",
+    "mv:teardown": "tsx scripts/manual-validation-teardown.ts"
   },
   "dependencies": {
     "cors": "^2.8.6",
