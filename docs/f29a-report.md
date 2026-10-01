@@ -177,9 +177,11 @@ Console data: `npm run mv:provision` in ul-platform, then `npm run credentials:p
 - No automatic provisioning on subscription activation yet (integration point documented in §7).
 - Revocation in Na Pista does not revoke the key on the Platform; Platform-side revocation surfaces as a
   Platform 401 → 503 (fail closed) but is not auto-reflected in Na Pista's row status.
-- Cached entitlement decisions may outlive a revocation by ≤10s (existing OD-13 TTL).
+- Cached entitlement decisions may outlive a revocation by ≤10s (existing OD-13 TTL). Since the closure
+  fix (§15.3) the persisted credential row is cached for the same 10s: a revocation made by **another**
+  process takes effect within that window (same process: immediately).
 - No credential status endpoint/UI (not required by the Console today; `getPlatformCredentialStatus` is ready).
-- Existing E2E suites need fresh fixtures (expired tokens) — see §12.
+- Existing E2E suites need fresh fixtures before each run (fixture tokens expire after 3h) — see §15.2.
 
 ## Quality gate
 
@@ -194,9 +196,83 @@ Console data: `npm run mv:provision` in ul-platform, then `npm run credentials:p
 | Migration passes | ✅ |
 | Typecheck · unit · integration · build | ✅ · ✅ · ✅ · ✅ |
 | New E2E | ✅ |
-| **Lint** | ❌ 18 pre-existing errors (none from F29A) |
-| **Existing F20–F29 E2E** | ⚠️ not runnable — pre-existing expired fixture tokens (proven on HEAD) |
+| **Lint** | ❌ 18 pre-existing errors (none from F29A) — unchanged at closure |
+| **Existing F20–F29 E2E** | ✅ at closure: 227/227 on fresh fixtures (see §15) |
 | Documentation · no secrets committed/printed | ✅ |
 
-**F29A status: runtime readiness achieved and proven on real infrastructure; not marked COMPLETE** while
-lint (pre-existing) fails and the existing E2E suites await fresh fixtures.
+Status at implementation time: runtime readiness proven; not yet marked complete. **Final status: §15.6.**
+
+## 15. Closure Validation
+
+Validated 2026-10-01 on branch `f29a-platform-credential-persistence`:
+`99d6ed2` (F29A) + `b9d0ed5` (closure fixes, §15.3). Real UL Platform + real PostgreSQL, no mocks.
+
+### 15.1 Environment
+
+Both repositories' required variables reported **configured** (values never printed), including
+`NA_PISTA_CREDENTIAL_ENCRYPTION_KEY` (valid 32-byte key). Migrations: 11 applied, rerun no-op.
+
+### 15.2 Fixtures
+
+- F20–F27 reprovisioned with ul-platform's own scripts (`f2x:teardown` → `f2x:provision`, scoped to
+  `F2x_TEST_ORG_*`); a second time at 07:35Z so the final run fit inside the 3h token TTL.
+- Manual-validation: `mv:teardown` → `mv:provision` (ul-platform), then `npm run credentials:provision`:
+  PROVISIONED ×2, rerun UNCHANGED ×2 (idempotent). No credential printed.
+
+### 15.3 Failures found by the complete E2E run, and resolution
+
+First complete run (05:33–06:41Z): 230 tests, **227 pass, 3 fail**. Each investigated from its trace, each
+compared against pre-F29A `main` (`99c7d07`) in a temporary worktree (since removed):
+
+| Test | Observed | Class | Resolution |
+| --- | --- | --- | --- |
+| `customers-own-db-unavailable` | assertion **passed** (503 `UPSTREAM_UNAVAILABLE`, reason `STORE_UNAVAILABLE`), then process crash `Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), src\win\async.c:94` | **A** — F29A regression (3/3 on F29A, 0/3 on `main`) | test harness → out-of-process server |
+| `orders-own-db-unavailable` | same | **A** | same |
+| `inventory-lifecycle` | file-level `timed out after 90000ms`; all 6 tests pass | **A** — F29A latency (+DB round trip per Platform call) | credential row cache |
+
+**Crash — root cause.** Since F29A the request's first action against Na Pista's (deliberately
+unreachable) database is the credential lookup. On Windows, `--test-force-exit` then races libuv's
+native teardown of those failed sockets. Proven: no crash without forced exit (3/3); waiting for JS
+handles to drain does not help (2/5 still crash — the race is native); resolving the override before the
+DB also avoids it, but would let a test override shadow a persisted REVOKED row — rejected (§8).
+**Fix:** both suites now run `src/server.ts` in a child process (`tests/e2e/childServer.ts`, the pattern
+the F29A runtime E2E already used), so the test process holds no dead-database handles. Their `test(...)`
+bodies are **byte-identical** to before (verified by diff); same assertions, now 3/3 clean each.
+
+**Timeout — root cause.** The 6 tests share one file-level 90s budget. Sum of test times: `main` ≈ 70s,
+F29A 84.5s (+21%) — run alone it passes; in the full run, with remote-DB variance, it crossed 90s.
+**Fix:** `resolver.ts` caches the persisted *row* (ciphertext + status — never plaintext, which is still
+decrypted per call) for 10s, misses included, DB failures never. Provisioning/revocation invalidate it
+in-process. Re-measured: 73.3s. The TTL equals the existing OD-13 entitlement cache, so the window in
+which another process's revocation goes unnoticed is unchanged in kind (§14). New integration tests:
+cross-process revocation enforced after expiry; in-process provisioning invalidates a cached miss.
+*Owner decision:* if zero cross-process revocation delay is preferred, remove the cache and raise the
+suite timeout instead — the credential design is unaffected either way.
+
+### 15.4 Final results (code at `b9d0ed5`)
+
+| Gate | Result |
+| --- | --- |
+| Complete F20–F29 E2E (07:35–08:37Z) | **227/227**, 0 crashes, 0 timeouts |
+| ↳ `platform-credentials-runtime` (Step 4, real infra) | **5/5** — provision, runtime with empty registry, restart, revocation → 503, no secret in output |
+| Integration (all, real PostgreSQL) | **208/208** (incl. `platformCredentials` 18/18) |
+| Unit | **219/219** |
+| Typecheck · build | pass · pass |
+| Lint | **18 errors, identical to pre-F29A** (`@typescript-eslint/no-explicit-any`, 10 e2e helper files); **0** in the 29 files F29A changed |
+
+The 10 `UNAUTHORIZED` log lines in the run each belong to a passing test that asserts a 401 (no/garbage
+Authorization header). The first run counted 230 because each crashed/timed-out file adds a file-level entry.
+
+### 15.5 Cleanup
+
+- F20–F27 Platform fixtures torn down with their own scoped teardowns; manual-validation fixtures **kept**
+  (they back `npm run dev` / the Console with persisted credentials; `mv:teardown` documented in
+  `docs/manual-validation.md` §11). Na Pista rows created by E2E runs for torn-down test organizations
+  remain in Na Pista's database — no Na Pista F2x teardown exists (pre-existing; unchanged by F29A).
+- The runtime E2E removes its own credential row; audit rows remain (append-only, by design).
+- No `.env`, fixture file or credential committed; temporary worktree and probe files removed.
+
+### 15.6 Status
+
+**F29A COMPLETE — WITH PRE-EXISTING REPOSITORY DEBT** (18 `no-explicit-any` lint errors in E2E helpers,
+present before F29A and untouched by it).
