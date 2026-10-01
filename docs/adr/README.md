@@ -57,3 +57,10 @@ e [`../decisions.md`](../decisions.md) (F19 — todas fechadas com evidência de
 | [048](ADR-048-appointment-no-show-lifecycle.md) | Appointment NO_SHOW Lifecycle | Accepted — implemented (F28B) | F28A |
 | [049](ADR-049-appointment-idempotency.md) | Appointment Creation Idempotency (`Idempotency-Key`) | Accepted — not yet implemented (F28C) | F28A |
 | [050](ADR-050-appointment-event-outbox.md) | Transactional Outbox for Appointment Events | Accepted — not yet implemented (F28D) | F28A |
+| [051](ADR-051-collection-pagination.md) | Collection Pagination & List Envelope (supersedes ADR-005's cursor clause) | Accepted — implemented (F30) | F30 |
+| [052](ADR-052-filtering-and-sorting.md) | Filtering & Sorting Conventions | Accepted — implemented (F30) | F30 |
+| [053](ADR-053-error-contract.md) | Public Error Contract Hardening | Accepted — implemented (F30) | F30 |
+| [054](ADR-054-openapi-source-of-truth.md) | OpenAPI Source of Truth (generated from Zod) | Accepted — implemented (F30) | F30 |
+| [055](ADR-055-audit-read-contract.md) | Audit Read Contract | Accepted — implemented (F30) | F30 |
+| [056](ADR-056-platform-credential-status.md) | Platform Credential Status Contract | Accepted — implemented (F30) | F30 |
+| [057](ADR-057-webhook-visibility.md) | Webhook Visibility (Platform-owned; documentation only) | Accepted — implemented (F30) | F30 |

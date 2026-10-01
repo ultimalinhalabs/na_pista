@@ -1,6 +1,6 @@
 # ADR-005 — API-first
 
-- **Estado:** Accepted (brief §1 e CLAUDE.md §9)
+- **Estado:** Accepted (brief §1 e CLAUDE.md §9) — pagination clause superseded by ADR-051 (F30)
 - **Data:** 2026-09-21
 
 ## Context
