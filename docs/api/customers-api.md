@@ -25,7 +25,7 @@ register a customer who has never signed in to anything.
   - `status?: ACTIVE|ARCHIVED` — omit for no filter; the UI defaults to `ACTIVE`.
   - `q?: string` — matches `name`, `email`, or `phone` (case-insensitive substring), tenant-scoped. No
     full-text engine.
-  - `limit?: 1-100 (default 50)` — a hard, safe cap; no offset pagination in this slice.
+  - **Pagination & sorting (F30, ADR-051/052):** `page` (default 1), `pageSize` (default 50, max 100; `limit` = deprecated alias), `sort` ∈ {`createdAt`, `name`} + `order=asc|desc`. The response adds `pagination: { page, pageSize, total, totalPages }` beside `data` — see [pagination.md](pagination.md).
 - **Response `200`:** `Customer[]`, newest first.
 
 ## `GET /organizations/:organizationId/customers/:customerId`
@@ -76,7 +76,7 @@ Authorization: Bearer <token>
 ```
 
 ```
-GET /v1/organizations/{orgId}/customers?q=ana&status=ACTIVE&limit=20
+GET /v1/organizations/{orgId}/customers?q=ana&status=ACTIVE&pageSize=20
 
 200
 { "data": [ { "id": "...", "name": "Ana Silva", ... } ] }

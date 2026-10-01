@@ -18,7 +18,8 @@ change a balance is `POST .../movements`. A balance does not exist until the pro
 - **Query:**
   - `zeroStock?: boolean` — when `true`, returns only balances at exactly `0`. There is no `lowStock` filter
     in this slice — see "Deferred: low-stock threshold" below.
-  - `limit?: 1-100 (default 50)`.
+  - `zeroStock` accepts exactly `true`/`false` (F30; `false` = no filter — it used to behave like `true`).
+  - **Pagination & sorting (F30, ADR-051/052):** `page` (default 1), `pageSize` (default 50, max 100; `limit` = deprecated alias), `sort` ∈ {`updatedAt`, `quantity`} + `order=asc|desc`. The response adds `pagination: { page, pageSize, total, totalPages }` beside `data` — see [pagination.md](pagination.md).
 - **Response `200`:** `InventoryBalance[]` (joined with the product for `productName`/`productUnit`/
   `productStatus`), newest-updated first. Includes balances for archived products.
 
@@ -32,7 +33,7 @@ change a balance is `POST .../movements`. A balance does not exist until the pro
 ## `GET /organizations/:organizationId/inventory/:productId/movements`
 - Same auth/entitlement as list. Requires the product to exist (`404 PRODUCT_NOT_FOUND` otherwise); an empty
   array is a valid, non-error response for a never-stocked product.
-- **Query:** `limit?: 1-100 (default 50)`.
+- **Pagination & sorting (F30, ADR-051/052):** `page` (default 1), `pageSize` (default 50, max 100; `limit` = deprecated alias), fixed order (no `sort`). The response adds `pagination: { page, pageSize, total, totalPages }` beside `data` — see [pagination.md](pagination.md).
 - **Response `200`:** `StockMovement[]`, newest first.
 
 ## `POST /organizations/:organizationId/inventory/:productId/movements`
