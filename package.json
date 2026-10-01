@@ -21,7 +21,8 @@
     "test": "npm run test:unit && npm run test:integration && npm run test:e2e",
     "mv:server": "tsx scripts/manual-validation-server.ts",
     "mv:seed": "tsx scripts/manual-validation-seed.ts",
-    "mv:teardown": "tsx scripts/manual-validation-teardown.ts"
+    "mv:teardown": "tsx scripts/manual-validation-teardown.ts",
+    "credentials:provision": "tsx scripts/provision-platform-credentials.ts"
   },
   "dependencies": {
     "cors": "^2.8.6",

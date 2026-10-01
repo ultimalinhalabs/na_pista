@@ -52,14 +52,18 @@ Browser (http://localhost:3010, Na Pista Console)
                          └── UL Platform API (entitlements, usage, audit context) with the org's platform-facing credential
 ```
 
-**Known backend gap (why there is a special launcher).** Na Pista keeps each
-organization's platform-facing credential in an in-memory registry
-(`src/platform/serviceAuth.ts`) and nothing in `src/` fills it outside tests.
-A plain `npm run dev` therefore answers every tenant request with
-`503 UPSTREAM_UNAVAILABLE`. `npm run mv:server` is a dev-only launcher that
-registers the fixture organizations' credentials (as the E2E harness does)
-and then starts the **unchanged** server. See `docs/f29-report.md`
-"Open gaps" for the proposed backend fix.
+**Platform credentials (F29A — gap G1 closed).** Each organization's
+platform-facing credential is persisted, encrypted, in Na Pista's own
+database. After provisioning the fixtures (§4), store their credentials once:
+
+```bash
+cd na-pista && npm run credentials:provision   # introspected by the Platform, encrypted, audited; idempotent
+```
+
+A plain `npm run dev` then serves those organizations — and keeps serving them
+across restarts. Requires `NA_PISTA_CREDENTIAL_ENCRYPTION_KEY` in `na-pista/.env`
+(see `.env.example`). `npm run mv:server` (in-memory registration) still works
+but is no longer needed. See `docs/f29a-report.md`.
 
 ## 4. Provision (UL Platform)
 
@@ -78,7 +82,8 @@ printed; no secret reaches stdout.
 ## 5. Start Na Pista and the Console
 
 ```bash
-cd na-pista && npm run mv:server           # terminal 3 — Na Pista on :4200
+cd na-pista && npm run credentials:provision   # once per provisioning run (F29A)
+cd na-pista && npm run dev                 # terminal 3 — Na Pista on :4200 (mv:server no longer required)
 cd na-pista-console && npm run dev         # terminal 4 — Console on :3010
 ```
 

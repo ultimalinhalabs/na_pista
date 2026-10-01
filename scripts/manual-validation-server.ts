@@ -4,6 +4,11 @@ import { loadManualValidationFixtures } from "./manual-validation-fixtures.js";
 /**
  * DEV-ONLY launcher for manual validation (docs/manual-validation.md).
  *
+ * F29A: no longer required — credentials are persisted in PostgreSQL
+ * (`npm run credentials:provision`, then plain `npm run dev`). Kept for
+ * compatibility; its in-memory registrations are only honoured for
+ * organizations with no persisted credential row, never in production.
+ *
  * Why this exists: Na Pista resolves entitlements/usage with a per-organization
  * platform credential held in an in-memory registry
  * (src/platform/serviceAuth.ts). Nothing in `src/` populates that registry

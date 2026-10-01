@@ -71,6 +71,13 @@
       "when": 1790371162845,
       "tag": "0009_omniscient_cassandra_nova",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790789156810,
+      "tag": "0010_platform_credentials",
+      "breakpoints": true
     }
   ]
 }

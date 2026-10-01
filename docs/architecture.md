@@ -108,11 +108,30 @@ Request (Bearer JWT)
   → membership activo + roleKey: via Platform (GET /v1/me com o JWT do utilizador)  [OD-12]
   → autorização: permission local do módulo ⊆ roleKey                        [Na Pista, OD-12]
   → entitlement: módulo habilitado para a org (Platform, cache curto)        [PG-1 / OD-11]
+      └ credencial da org para o Platform: carregada do PostgreSQL, decifrada
+        no servidor, usada só no header da chamada ao Platform              [F29A]
   → controller → service → repository(TenantContext) → BD
   → audit de negócio + outbox (eventos, usage) na MESMA transacção
 ```
 
 Detalhes em [`authorization.md`](authorization.md), [`tenancy.md`](tenancy.md), [`entitlements.md`](entitlements.md).
+
+### 5.1 Credencial de serviço da organização (F29A)
+
+As chamadas do próprio Na Pista ao Platform (entitlements, usage) usam a credencial *platform-facing* da
+organização (API key `NA_PISTA` com scope de organização, emitida pelo Platform — OD-11). Desde a F29A:
+
+- **Persistida** em `na_pista.organization_platform_credentials`, **cifrada** (AES-256-GCM, envelope `v1:`,
+  AAD ligada ao `organization_id`) com `NA_PISTA_CREDENTIAL_ENCRYPTION_KEY` — chave exclusiva do Na Pista,
+  obrigatória em produção. No máximo uma credencial `ACTIVE` por organização (índice único parcial).
+- **Resolvida** por um único ponto, `modules/platformCredentials/resolver.ts`, só depois do `TenantContext`
+  validado; falha fechada (503) se ausente, revogada, indecifrável ou sem chave — nenhum pedido é enviado ao Platform.
+- **Provisionada** explicitamente (`provisionPlatformCredential`: o Platform confirma organização e aplicação via
+  `GET /v1/service/me`; idempotente; nunca sobrescreve nem reactiva uma revogada). Nunca em GET, nunca no arranque.
+- O registo em memória (`platform/serviceAuth.ts`) já **não** é fonte de runtime: é um override só de teste/dev,
+  consultado apenas quando não há linha na BD e nunca em produção.
+
+Relatório: [`f29a-report.md`](f29a-report.md).
 
 ## 6. Escala e simplicidade
 Nada nesta fase resolve problemas de escala futuros com complexidade presente (CLAUDE.md §14): sem CQRS, sem

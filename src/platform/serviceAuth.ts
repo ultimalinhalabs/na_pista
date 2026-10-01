@@ -1,14 +1,15 @@
 /**
- * OD-11 (F19, CLOSED — Alternative A): one organization-scoped NA_PISTA
- * API key per Organization, held by Na Pista, used for its OWN outbound
- * calls to the Platform (entitlements, usage, events).
+ * F29A: NOT the runtime credential source any more. Platform credentials are
+ * persisted encrypted in PostgreSQL and resolved by
+ * `modules/platformCredentials/resolver.ts` — a normal `npm run dev`/`start`
+ * never needs anything registered here.
  *
- * In-memory on purpose for now — this mirrors the F19 spike's registry.
- * A real production deployment needs a real secret store (encrypted
- * column keyed by organizationId, or a KMS-backed vault) and
- * provisioning automation tied to subscription lifecycle — not built in
- * F20 either (see docs/f20-report.md "Known limitations"); Products
- * management does not require solving credential storage first.
+ * What remains is an explicit TEST/DEV override store, kept so the existing
+ * F20–F29 e2e harness (which injects fixture credentials per test run) and
+ * the `mv:server` launcher keep working unchanged. The resolver consults it
+ * ONLY when (a) the database has no row at all for the organization and
+ * (b) NODE_ENV is not "production". Production never reads it, and a
+ * persisted REVOKED credential can never be bypassed through it.
  */
 const credentials = new Map<string, string>();
 
@@ -22,4 +23,9 @@ export function getServiceCredential(organizationId: string): string | undefined
 
 export function clearServiceCredentials() {
   credentials.clear();
+}
+
+/** How many overrides are registered — lets tests prove the runtime works with none. */
+export function registeredServiceCredentialCount(): number {
+  return credentials.size;
 }
