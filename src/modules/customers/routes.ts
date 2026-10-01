@@ -3,12 +3,14 @@ import { CATALOG_CAPABILITY_KEY, requireCapability } from "../../middleware/requ
 import { requireAuthorized } from "../../middleware/requireAuthorized.js";
 import { requireTenantContext } from "../../tenancy/tenantContext.js";
 import { actorFromRequest } from "../../tenancy/actor.js";
-import { paramString } from "../../shared/params.js";
+import { paramString, validateUuidParams } from "../../shared/params.js";
 import { ok } from "../../shared/response.js";
+import { parseBody, parseQuery } from "../../shared/validate.js";
 import { createCustomerSchema, listCustomersQuerySchema, updateCustomerSchema } from "./schemas.js";
 import { archiveCustomer, createCustomer, getCustomerOrThrow, listAllCustomers, updateCustomerOrThrow } from "./service.js";
 
 export const customersRouter = Router();
+validateUuidParams(customersRouter);
 
 /**
  * Gated by `catalog.enabled` (ADR-022's key, reused — see
@@ -23,7 +25,7 @@ customersRouter.post(
   requireAuthorized("customers.create", "catalog.write"),
   async (req, res, next) => {
     try {
-      const body = createCustomerSchema.parse(req.body);
+      const body = parseBody(createCustomerSchema, req.body);
       const customer = await createCustomer(req.tenant!, actorFromRequest(req), req.requestId, body);
       ok(res, customer, 201);
     } catch (error) {
@@ -38,7 +40,7 @@ customersRouter.get(
   requireAuthorized("customers.read", "catalog.read"),
   async (req, res, next) => {
     try {
-      const query = listCustomersQuerySchema.parse(req.query);
+      const query = parseQuery(listCustomersQuerySchema, req.query);
       const items = await listAllCustomers(req.tenant!, query);
       ok(res, items);
     } catch (error) {
@@ -67,7 +69,7 @@ customersRouter.patch(
   requireAuthorized("customers.update", "catalog.write"),
   async (req, res, next) => {
     try {
-      const body = updateCustomerSchema.parse(req.body);
+      const body = parseBody(updateCustomerSchema, req.body);
       const customer = await updateCustomerOrThrow(
         req.tenant!,
         actorFromRequest(req),

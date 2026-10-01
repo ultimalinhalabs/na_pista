@@ -3,8 +3,9 @@ import { CATALOG_CAPABILITY_KEY, requireCapability } from "../../middleware/requ
 import { requireAuthorized } from "../../middleware/requireAuthorized.js";
 import { requireTenantContext } from "../../tenancy/tenantContext.js";
 import { actorFromRequest } from "../../tenancy/actor.js";
-import { paramString } from "../../shared/params.js";
+import { paramString, validateUuidParams } from "../../shared/params.js";
 import { ok } from "../../shared/response.js";
+import { parseBody, parseQuery } from "../../shared/validate.js";
 import { addOrderItemSchema, createOrderSchema, listOrdersQuerySchema, updateOrderItemSchema, updateOrderSchema } from "./schemas.js";
 import {
   addOrderItem,
@@ -20,6 +21,7 @@ import {
 } from "./service.js";
 
 export const ordersRouter = Router();
+validateUuidParams(ordersRouter);
 
 const GATE = [requireTenantContext(), requireCapability(CATALOG_CAPABILITY_KEY)] as const;
 
@@ -29,7 +31,7 @@ ordersRouter.post(
   requireAuthorized("orders.create", "catalog.write"),
   async (req, res, next) => {
     try {
-      const body = createOrderSchema.parse(req.body);
+      const body = parseBody(createOrderSchema, req.body);
       const order = await createOrder(req.tenant!, actorFromRequest(req), req.requestId, body);
       ok(res, order, 201);
     } catch (error) {
@@ -44,7 +46,7 @@ ordersRouter.get(
   requireAuthorized("orders.read", "catalog.read"),
   async (req, res, next) => {
     try {
-      const query = listOrdersQuerySchema.parse(req.query);
+      const query = parseQuery(listOrdersQuerySchema, req.query);
       const items = await listAllOrders(req.tenant!, query);
       ok(res, items);
     } catch (error) {
@@ -74,7 +76,7 @@ ordersRouter.patch(
   requireAuthorized("orders.update", "catalog.write"),
   async (req, res, next) => {
     try {
-      const body = updateOrderSchema.parse(req.body);
+      const body = parseBody(updateOrderSchema, req.body);
       const order = await updateOrderCustomerOrThrow(req.tenant!, actorFromRequest(req), req.requestId, paramString(req.params.orderId)!, body.customerId ?? null);
       ok(res, order);
     } catch (error) {
@@ -89,7 +91,7 @@ ordersRouter.post(
   requireAuthorized("orders.update", "catalog.write"),
   async (req, res, next) => {
     try {
-      const body = addOrderItemSchema.parse(req.body);
+      const body = parseBody(addOrderItemSchema, req.body);
       const order = await addOrderItem(req.tenant!, actorFromRequest(req), req.requestId, paramString(req.params.orderId)!, body);
       ok(res, order, 201);
     } catch (error) {
@@ -104,7 +106,7 @@ ordersRouter.patch(
   requireAuthorized("orders.update", "catalog.write"),
   async (req, res, next) => {
     try {
-      const body = updateOrderItemSchema.parse(req.body);
+      const body = parseBody(updateOrderItemSchema, req.body);
       const order = await updateOrderItemQuantityOrThrow(
         req.tenant!,
         actorFromRequest(req),

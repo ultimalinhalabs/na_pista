@@ -15,14 +15,17 @@ field or parameter was wrong.
 
 1. `requestId` runs **before** body parsing — every response, including parse failures, carries `X-Request-ID`.
 2. Malformed JSON / unsupported body → `400 VALIDATION_ERROR` ("Malformed JSON body"); oversize body → `413 PAYLOAD_TOO_LARGE`.
-3. Any unmatched route → JSON `404 NOT_FOUND` ("Route not found"), after authentication for `/v1` paths (an
+3. Path ids (`:organizationId`, `:productId`, …) are validated as UUIDs at the router → `400 VALIDATION_ERROR` with
+   `location: "path"`. Measured before F30: a malformed id reached PostgreSQL (`22P02`) and returned `500`. `22P02` is
+   also mapped to 400 as a backstop.
+4. Any unmatched route → JSON `404 NOT_FOUND` ("Route not found"), after authentication for `/v1` paths (an
    unauthenticated caller still gets `401` first — route existence is not disclosed to anonymous callers).
-4. Validation errors gain an **additive** `details` array:
-   `{ "error": { "code": "VALIDATION_ERROR", "message": "Invalid request", "details": [ { "location": "query", "path": "pageSize", "message": "…" } ] } }`
+5. Validation errors gain an **additive** `details` array (the message stays "Invalid request payload"):
+   `{ "error": { "code": "VALIDATION_ERROR", "message": "Invalid request payload", "details": [ { "location": "query", "path": "pageSize", "message": "…" } ] } }`
    - `location` ∈ `body | query | path`; `path` is the dotted field path **of the client's own input**; `message` is
      the validator's message. Never values, never schema internals beyond the field name.
-5. Codes are stable identifiers; messages are human-readable and may change. Clients branch on `code`, then HTTP status.
-6. Unchanged posture: no SQL, stack, driver code, connection detail, path, credential or crypto detail ever reaches a
+6. Codes are stable identifiers; messages are human-readable and may change. Clients branch on `code`, then HTTP status.
+7. Unchanged posture: no SQL, stack, driver code, connection detail, path, credential or crypto detail ever reaches a
    response (driver codes are logged server-side only).
 
 ## Alternatives considered
@@ -33,9 +36,9 @@ field or parameter was wrong.
 
 ## Compatibility impact
 
-Additive (`details`). Status changes only for requests that were already failing (500 → 400, HTML 404 → JSON 404). The
-`message` for Zod failures changes from "Invalid request payload" to "Invalid request" — messages are documented as
-non-contractual.
+Additive (`details`). Status changes only for requests that were already failing (500 → 400, HTML 404 → JSON 404,
+malformed path ids 500 → 400). The validation message is unchanged ("Invalid request payload" — the Console treats it as
+uninformative and hides it; changing it would surface it to users).
 
 ## Migration impact
 

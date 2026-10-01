@@ -3,8 +3,9 @@ import { CATALOG_CAPABILITY_KEY, requireCapability } from "../../middleware/requ
 import { requireAuthorized } from "../../middleware/requireAuthorized.js";
 import { requireTenantContext } from "../../tenancy/tenantContext.js";
 import { actorFromRequest } from "../../tenancy/actor.js";
-import { paramString } from "../../shared/params.js";
+import { paramString, validateUuidParams } from "../../shared/params.js";
 import { ok } from "../../shared/response.js";
+import { parseBody, parseQuery } from "../../shared/validate.js";
 import { bookableSlotsQuerySchema, cancelAppointmentSchema, createAppointmentSchema, listAppointmentsQuerySchema, noShowAppointmentSchema, updateAppointmentSchema } from "./schemas.js";
 import {
   cancelAppointment,
@@ -25,12 +26,13 @@ import {
  * `status` field. No DELETE: appointments are never deleted.
  */
 export const appointmentsRouter = Router();
+validateUuidParams(appointmentsRouter);
 
 const GATE = [requireTenantContext(), requireCapability(CATALOG_CAPABILITY_KEY)] as const;
 
 appointmentsRouter.post("/organizations/:organizationId/appointments", ...GATE, requireAuthorized("appointments.create", "catalog.write"), async (req, res, next) => {
   try {
-    const body = createAppointmentSchema.parse(req.body);
+    const body = parseBody(createAppointmentSchema, req.body);
     const appointment = await createAppointment(req.tenant!, actorFromRequest(req), req.requestId, body);
     ok(res, appointment, 201);
   } catch (error) {
@@ -40,7 +42,7 @@ appointmentsRouter.post("/organizations/:organizationId/appointments", ...GATE, 
 
 appointmentsRouter.get("/organizations/:organizationId/appointments", ...GATE, requireAuthorized("appointments.read", "catalog.read"), async (req, res, next) => {
   try {
-    const query = listAppointmentsQuerySchema.parse(req.query);
+    const query = parseQuery(listAppointmentsQuerySchema, req.query);
     ok(res, await listAppointmentsOrThrow(req.tenant!, query));
   } catch (error) {
     next(error);
@@ -66,7 +68,7 @@ appointmentsRouter.patch(
   requireAuthorized("appointments.update", "catalog.write"),
   async (req, res, next) => {
     try {
-      const body = updateAppointmentSchema.parse(req.body);
+      const body = parseBody(updateAppointmentSchema, req.body);
       ok(res, await updateAppointmentOrThrow(req.tenant!, actorFromRequest(req), req.requestId, paramString(req.params.appointmentId)!, body));
     } catch (error) {
       next(error);
@@ -80,7 +82,7 @@ appointmentsRouter.post(
   requireAuthorized("appointments.update", "catalog.write"),
   async (req, res, next) => {
     try {
-      const body = cancelAppointmentSchema.parse(req.body ?? {});
+      const body = parseBody(cancelAppointmentSchema, req.body ?? {});
       ok(res, await cancelAppointment(req.tenant!, actorFromRequest(req), req.requestId, paramString(req.params.appointmentId)!, body));
     } catch (error) {
       next(error);
@@ -108,7 +110,7 @@ appointmentsRouter.post(
   requireAuthorized("appointments.update", "catalog.write"),
   async (req, res, next) => {
     try {
-      noShowAppointmentSchema.parse(req.body ?? {});
+      parseBody(noShowAppointmentSchema, req.body ?? {});
       ok(res, await markAppointmentNoShow(req.tenant!, actorFromRequest(req), req.requestId, paramString(req.params.appointmentId)!));
     } catch (error) {
       next(error);
@@ -123,7 +125,7 @@ appointmentsRouter.get(
   requireAuthorized("appointments.read", "catalog.read"),
   async (req, res, next) => {
     try {
-      const query = bookableSlotsQuerySchema.parse(req.query);
+      const query = parseQuery(bookableSlotsQuerySchema, req.query);
       ok(res, await getBookableSlotsOrThrow(req.tenant!, paramString(req.params.professionalId)!, query));
     } catch (error) {
       next(error);

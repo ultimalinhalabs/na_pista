@@ -3,8 +3,9 @@ import { CATALOG_CAPABILITY_KEY, requireCapability } from "../../middleware/requ
 import { requireAuthorized } from "../../middleware/requireAuthorized.js";
 import { requireTenantContext } from "../../tenancy/tenantContext.js";
 import { actorFromRequest } from "../../tenancy/actor.js";
-import { paramString } from "../../shared/params.js";
+import { paramString, validateUuidParams } from "../../shared/params.js";
 import { ok } from "../../shared/response.js";
+import { parseBody, parseQuery } from "../../shared/validate.js";
 import { createProfessionalSchema, listProfessionalsQuerySchema, updateProfessionalSchema } from "./schemas.js";
 import {
   associateService,
@@ -17,6 +18,7 @@ import {
 } from "./service.js";
 
 export const professionalsRouter = Router();
+validateUuidParams(professionalsRouter);
 
 const GATE = [requireTenantContext(), requireCapability(CATALOG_CAPABILITY_KEY)] as const;
 
@@ -26,7 +28,7 @@ professionalsRouter.post(
   requireAuthorized("professionals.create", "catalog.write"),
   async (req, res, next) => {
     try {
-      const body = createProfessionalSchema.parse(req.body);
+      const body = parseBody(createProfessionalSchema, req.body);
       const professional = await createProfessional(req.tenant!, actorFromRequest(req), req.requestId, body);
       ok(res, professional, 201);
     } catch (error) {
@@ -41,7 +43,7 @@ professionalsRouter.get(
   requireAuthorized("professionals.read", "catalog.read"),
   async (req, res, next) => {
     try {
-      const query = listProfessionalsQuerySchema.parse(req.query);
+      const query = parseQuery(listProfessionalsQuerySchema, req.query);
       const items = await listAllProfessionals(req.tenant!, query);
       ok(res, items);
     } catch (error) {
@@ -72,7 +74,7 @@ professionalsRouter.patch(
   requireAuthorized("professionals.update", "catalog.write"),
   async (req, res, next) => {
     try {
-      const body = updateProfessionalSchema.parse(req.body);
+      const body = parseBody(updateProfessionalSchema, req.body);
       const professional = await updateProfessionalOrThrow(
         req.tenant!,
         actorFromRequest(req),

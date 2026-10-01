@@ -2,8 +2,9 @@ import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 import { env } from "./config/env.js";
+import { openApiDocument } from "./contract/openapi.js";
 import { authenticate } from "./middleware/authenticate.js";
-import { errorHandler } from "./middleware/errorHandler.js";
+import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import { appointmentsRouter } from "./modules/appointments/routes.js";
 import { categoriesRouter } from "./modules/categories/routes.js";
 import { customersRouter } from "./modules/customers/routes.js";
@@ -27,10 +28,15 @@ export function buildApp() {
       credentials: true,
     }),
   );
-  app.use(express.json());
+  // ADR-053: request id first, so every response — including body-parse failures — carries X-Request-ID.
   app.use(requestId);
+  app.use(express.json());
 
   app.get("/v1/health", (_req, res) => ok(res, { status: "ok" }));
+  // ADR-054: the public contract — unauthenticated, contains no secret or internal detail.
+  app.get("/v1/openapi.json", (_req, res) => {
+    res.json(openApiDocument());
+  });
 
   app.use(
     "/v1",
@@ -45,8 +51,11 @@ export function buildApp() {
     organizationSettingsRouter,
     schedulingRouter,
     appointmentsRouter,
+    // Authenticated but no route matched (anonymous callers already got 401: route existence is not disclosed).
+    notFoundHandler,
   );
 
+  app.use(notFoundHandler);
   app.use(errorHandler);
   return app;
 }

@@ -3,7 +3,9 @@ import { CATALOG_CAPABILITY_KEY, requireCapability } from "../../middleware/requ
 import { requireAuthorized } from "../../middleware/requireAuthorized.js";
 import { requireTenantContext } from "../../tenancy/tenantContext.js";
 import { actorFromRequest } from "../../tenancy/actor.js";
+import { validateUuidParams } from "../../shared/params.js";
 import { ok } from "../../shared/response.js";
+import { parseBody } from "../../shared/validate.js";
 import { updateOrganizationSettingsSchema } from "./schemas.js";
 import { getOrganizationSettingsOrNull, updateOrganizationSettings } from "./service.js";
 
@@ -16,6 +18,7 @@ import { getOrganizationSettingsOrNull, updateOrganizationSettings } from "./ser
  * the trigger to introduce a dedicated permission, not now.
  */
 export const organizationSettingsRouter = Router();
+validateUuidParams(organizationSettingsRouter);
 
 const GATE = [requireTenantContext(), requireCapability(CATALOG_CAPABILITY_KEY)] as const;
 
@@ -39,7 +42,7 @@ organizationSettingsRouter.put(
   requireAuthorized("scheduling.update", "catalog.write"),
   async (req, res, next) => {
     try {
-      const body = updateOrganizationSettingsSchema.parse(req.body);
+      const body = parseBody(updateOrganizationSettingsSchema, req.body);
       const settings = await updateOrganizationSettings(req.tenant!, actorFromRequest(req), req.requestId, body.timezone);
       ok(res, settings);
     } catch (error) {
