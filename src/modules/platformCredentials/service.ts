@@ -5,6 +5,7 @@ import { getCredentialEncryptionKey } from "../../security/credentialKey.js";
 import { ConflictError, isUniqueViolationError, NotFoundError, ValidationError } from "../../shared/errors.js";
 import { logger } from "../../shared/logger.js";
 import { recordAuditEvent } from "../audit/service.js";
+import { invalidatePlatformCredentialCache } from "./resolver.js";
 import {
   findByPlatformKey,
   findCurrentCredential,
@@ -93,7 +94,7 @@ export async function provisionPlatformCredential(
   const encryptedCredential = encryptCredential(credential, organizationId, (opts.key ?? getCredentialEncryptionKey)());
 
   try {
-    return await db.transaction(async (tx) => {
+    const result = await db.transaction(async (tx) => {
       const sameKey = await findByPlatformKey(organizationId, identity.apiKeyId, tx);
       if (sameKey?.status === "ACTIVE") return { outcome: "UNCHANGED" as const, status: toStatus(sameKey) };
       if (sameKey?.status === "REVOKED") {
@@ -141,6 +142,8 @@ export async function provisionPlatformCredential(
       logger.info("platform_credential.provisioned", { organizationId, outcome, requestId: opts.requestId });
       return { outcome, status: toStatus(row) };
     });
+    invalidatePlatformCredentialCache(organizationId);
+    return result;
   } catch (error) {
     // A concurrent provision for the same organization lost the race on
     // the partial unique index (or the Platform key UNIQUE). Re-read: the
@@ -164,7 +167,7 @@ export async function revokePlatformCredential(
   opts: { actor: ProvisioningActor; requestId?: string; reason?: string },
 ): Promise<PlatformCredentialStatus> {
   if (!UUID.test(organizationId)) throw new ValidationError("organizationId must be a UUID");
-  return db.transaction(async (tx) => {
+  const status = await db.transaction(async (tx) => {
     const row = await revokeActiveCredential(organizationId, tx);
     if (!row) throw new NotFoundError("This organization has no active Platform credential");
     await recordAuditEvent(
@@ -183,6 +186,9 @@ export async function revokePlatformCredential(
     logger.info("platform_credential.revoked", { organizationId, requestId: opts.requestId });
     return toStatus(row);
   });
+  // Effective immediately in this process; other processes within the 10s row-cache TTL.
+  invalidatePlatformCredentialCache(organizationId);
+  return status;
 }
 
 export async function getPlatformCredentialStatus(organizationId: string): Promise<PlatformCredentialStatus> {

@@ -6,7 +6,11 @@ import test, { after } from "node:test";
 import { and, eq, inArray } from "drizzle-orm";
 import { db, queryClient } from "../../src/db/index.js";
 import { auditEvents, organizationPlatformCredentials } from "../../src/db/schema/index.js";
-import { PlatformCredentialUnavailableError, resolvePlatformCredential } from "../../src/modules/platformCredentials/resolver.js";
+import {
+  invalidatePlatformCredentialCache,
+  PlatformCredentialUnavailableError,
+  resolvePlatformCredential,
+} from "../../src/modules/platformCredentials/resolver.js";
 import {
   getPlatformCredentialStatus,
   provisionPlatformCredential,
@@ -266,6 +270,29 @@ test("no secret reaches logs or error messages on any failure path", async () =>
   assert.ok(!everything.includes(credential), "plaintext credential never logged or in an error");
   assert.ok(!everything.includes(row!.encryptedCredential), "ciphertext never logged or in an error");
   assert.ok(!everything.includes(testKey.toString("base64")), "key never logged or in an error");
+});
+
+test("row cache: a revocation made by another process is enforced once the cached row expires (≤10s, OD-13 window)", async () => {
+  const org = newOrg();
+  const { credential } = await provision(org);
+  assert.equal(await resolvePlatformCredential(org, { key }), credential); // row now cached
+
+  // Another process revokes directly in the database (this process's cache is not told).
+  await db
+    .update(organizationPlatformCredentials)
+    .set({ status: "REVOKED", revokedAt: new Date(), updatedAt: new Date() })
+    .where(eq(organizationPlatformCredentials.organizationId, org));
+  assert.equal(await resolvePlatformCredential(org, { key }), credential, "within the TTL the cached row still applies");
+
+  invalidatePlatformCredentialCache(org); // = TTL elapsed
+  await rejectsUnavailable(resolvePlatformCredential(org, { key }), "REVOKED");
+});
+
+test("row cache: a cached miss is invalidated by in-process provisioning — the new credential is usable immediately", async () => {
+  const org = newOrg();
+  await rejectsUnavailable(resolvePlatformCredential(org, { key }), "NOT_PROVISIONED"); // "no row" now cached
+  const { credential } = await provision(org); // invalidates
+  assert.equal(await resolvePlatformCredential(org, { key }), credential);
 });
 
 test("restart simulation: a fresh process (new module graph, empty registry) resolves the persisted credential", async () => {
