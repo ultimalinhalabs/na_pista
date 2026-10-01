@@ -4,7 +4,7 @@ import { requireAuthorized } from "../../middleware/requireAuthorized.js";
 import { requireTenantContext } from "../../tenancy/tenantContext.js";
 import { actorFromRequest } from "../../tenancy/actor.js";
 import { paramString, validateUuidParams } from "../../shared/params.js";
-import { ok } from "../../shared/response.js";
+import { ok, okPage } from "../../shared/response.js";
 import { parseBody, parseQuery } from "../../shared/validate.js";
 import { addOrderItemSchema, createOrderSchema, listOrdersQuerySchema, updateOrderItemSchema, updateOrderSchema } from "./schemas.js";
 import {
@@ -14,7 +14,7 @@ import {
   confirmOrder,
   createOrder,
   getOrderOrThrow,
-  listAllOrders,
+  listOrdersPage,
   removeOrderItemOrThrow,
   updateOrderCustomerOrThrow,
   updateOrderItemQuantityOrThrow,
@@ -47,8 +47,7 @@ ordersRouter.get(
   async (req, res, next) => {
     try {
       const query = parseQuery(listOrdersQuerySchema, req.query);
-      const items = await listAllOrders(req.tenant!, query);
-      ok(res, items);
+      okPage(res, await listOrdersPage(req.tenant!, query));
     } catch (error) {
       next(error);
     }

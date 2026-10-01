@@ -4,10 +4,10 @@ import { requireAuthorized } from "../../middleware/requireAuthorized.js";
 import { requireTenantContext } from "../../tenancy/tenantContext.js";
 import { actorFromRequest } from "../../tenancy/actor.js";
 import { paramString, validateUuidParams } from "../../shared/params.js";
-import { ok } from "../../shared/response.js";
+import { ok, okPage } from "../../shared/response.js";
 import { parseBody, parseQuery } from "../../shared/validate.js";
 import { createServiceSchema, listServicesQuerySchema, updateServiceSchema } from "./schemas.js";
-import { createService, getServiceOrThrow, listAllServices, updateServiceOrThrow } from "./service.js";
+import { createService, getServiceOrThrow, listServicesPage, updateServiceOrThrow } from "./service.js";
 
 export const servicesRouter = Router();
 validateUuidParams(servicesRouter);
@@ -36,8 +36,7 @@ servicesRouter.get(
   async (req, res, next) => {
     try {
       const query = parseQuery(listServicesQuerySchema, req.query);
-      const items = await listAllServices(req.tenant!, query);
-      ok(res, items);
+      okPage(res, await listServicesPage(req.tenant!, query));
     } catch (error) {
       next(error);
     }

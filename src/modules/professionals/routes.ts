@@ -4,14 +4,14 @@ import { requireAuthorized } from "../../middleware/requireAuthorized.js";
 import { requireTenantContext } from "../../tenancy/tenantContext.js";
 import { actorFromRequest } from "../../tenancy/actor.js";
 import { paramString, validateUuidParams } from "../../shared/params.js";
-import { ok } from "../../shared/response.js";
+import { ok, okPage } from "../../shared/response.js";
 import { parseBody, parseQuery } from "../../shared/validate.js";
 import { createProfessionalSchema, listProfessionalsQuerySchema, updateProfessionalSchema } from "./schemas.js";
 import {
   associateService,
   createProfessional,
   getProfessionalOrThrow,
-  listAllProfessionals,
+  listProfessionalsPage,
   listServicesForProfessionalOrThrow,
   removeAssociation,
   updateProfessionalOrThrow,
@@ -44,8 +44,7 @@ professionalsRouter.get(
   async (req, res, next) => {
     try {
       const query = parseQuery(listProfessionalsQuerySchema, req.query);
-      const items = await listAllProfessionals(req.tenant!, query);
-      ok(res, items);
+      okPage(res, await listProfessionalsPage(req.tenant!, query));
     } catch (error) {
       next(error);
     }

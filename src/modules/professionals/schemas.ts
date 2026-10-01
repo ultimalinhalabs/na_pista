@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { pageFields, pageSizeOrLimit, sortFields } from "../../shared/listing.js";
 import { emailSchema, phoneSchema } from "../customers/schemas.js";
 
 const uuidSchema = z.string().uuid();
@@ -37,11 +38,15 @@ export const updateProfessionalSchema = z
   .strict();
 
 /** Same shape as Products'/Customers'/Services' list query — status filter, name search (ILIKE), a hard safe limit, plus `serviceId` (ADR-037/F25A §14: filter to Professionals associated with a given Service). */
+export const PROFESSIONALS_DEFAULT_PAGE_SIZE = 50;
 export const listProfessionalsQuerySchema = z
   .object({
     status: z.enum(["ACTIVE", "ARCHIVED"]).optional(),
-    q: z.string().trim().min(1).max(200).optional(),
+    q: z.string().trim().min(1).max(200).optional().meta({ description: "Case-insensitive substring of the professional's name." }),
     serviceId: uuidSchema.optional(),
-    limit: z.coerce.number().int().positive().max(100).default(50),
+    ...pageFields(PROFESSIONALS_DEFAULT_PAGE_SIZE, 100),
+    ...sortFields(["createdAt", "name"], "createdAt", "desc"),
   })
-  .strict();
+  .strict()
+  .refine(...pageSizeOrLimit);
+export type ListProfessionalsQuery = z.infer<typeof listProfessionalsQuerySchema>;

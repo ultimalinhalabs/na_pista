@@ -73,6 +73,12 @@
  * `appointments.delete` — appointments are never deleted (cancel is a
  * transition). STAFF read-only, consistent with every other module
  * (frozen F27 decision).
+ *
+ * F30 (ADR-055/ADR-056): `audit.read` (read the organization's business
+ * audit trail) and `integrations.read` (read integration metadata such as
+ * the Platform credential status) — OWNER and ADMIN only, mirroring the UL
+ * Platform's own `audit.read` / `api_key.read` grants. Human-only: no
+ * service scope maps to them (the Platform defines none).
  */
 export const ROLE_PERMISSIONS: Record<string, string[]> = {
   OWNER: [
@@ -106,6 +112,8 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     "appointments.read",
     "appointments.create",
     "appointments.update",
+    "audit.read",
+    "integrations.read",
   ],
   ADMIN: [
     "products.read",
@@ -138,6 +146,8 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     "appointments.read",
     "appointments.create",
     "appointments.update",
+    "audit.read",
+    "integrations.read",
   ],
   MANAGER: [
     "products.read",

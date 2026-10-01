@@ -3,7 +3,11 @@ import { recordUsage } from "../../platform/usage.js";
 import { recordAuditEvent } from "../audit/service.js";
 import { getCategory } from "../categories/repository.js";
 import { NotFoundError, ValidationError } from "../../shared/errors.js";
-import { getProduct, insertProduct, listProducts, updateProduct, type ProductFilters, type TenantContext } from "./repository.js";
+import { pageRequest, type Page } from "../../shared/listing.js";
+import { countProducts, getProduct, insertProduct, listProducts, updateProduct, type ProductFilters, type TenantContext } from "./repository.js";
+import { PRODUCTS_DEFAULT_PAGE_SIZE, type ListProductsQuery } from "./schemas.js";
+
+type Product = Awaited<ReturnType<typeof listProducts>>[number];
 
 export interface Actor {
   type: "user" | "service";
@@ -57,6 +61,17 @@ export async function createProduct(
 
 export async function listAllProducts(tenant: TenantContext, filters: ProductFilters) {
   return listProducts(tenant, filters);
+}
+
+/** ADR-051: one page + the tenant-scoped total for the same filters. */
+export async function listProductsPage(tenant: TenantContext, query: ListProductsQuery): Promise<Page<Product>> {
+  const { page, pageSize, offset } = pageRequest(query, PRODUCTS_DEFAULT_PAGE_SIZE);
+  const { page: _p, pageSize: _s, limit: _l, ...filters } = query;
+  const [items, total] = await Promise.all([
+    listProducts(tenant, { ...filters, limit: pageSize, offset }),
+    countProducts(tenant, filters),
+  ]);
+  return { items, page, pageSize, total };
 }
 
 export async function getProductOrThrow(tenant: TenantContext, id: string) {

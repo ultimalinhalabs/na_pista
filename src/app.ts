@@ -6,11 +6,13 @@ import { openApiDocument } from "./contract/openapi.js";
 import { authenticate } from "./middleware/authenticate.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import { appointmentsRouter } from "./modules/appointments/routes.js";
+import { auditRouter } from "./modules/audit/routes.js";
 import { categoriesRouter } from "./modules/categories/routes.js";
 import { customersRouter } from "./modules/customers/routes.js";
 import { inventoryRouter } from "./modules/inventory/routes.js";
 import { ordersRouter } from "./modules/orders/routes.js";
 import { organizationSettingsRouter } from "./modules/organizationSettings/routes.js";
+import { platformCredentialsRouter } from "./modules/platformCredentials/routes.js";
 import { productsRouter } from "./modules/products/routes.js";
 import { professionalsRouter } from "./modules/professionals/routes.js";
 import { schedulingRouter } from "./modules/scheduling/routes.js";
@@ -51,6 +53,8 @@ export function buildApp() {
     organizationSettingsRouter,
     schedulingRouter,
     appointmentsRouter,
+    auditRouter,
+    platformCredentialsRouter,
     // Authenticated but no route matched (anonymous callers already got 401: route existence is not disclosed).
     notFoundHandler,
   );

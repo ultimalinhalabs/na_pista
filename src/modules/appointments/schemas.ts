@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { pageFields, pageSizeOrLimit } from "../../shared/listing.js";
 import { localDateSchema } from "../scheduling/schemas.js";
 import { APPOINTMENT_STATUSES } from "./lifecycle.js";
 import { inclusiveDayCount } from "./time.js";
@@ -77,6 +78,7 @@ export const noShowAppointmentSchema = z.object({}).strict();
 /** F27A §41: listing is ALWAYS bounded — both dates required, at most 31 local days inclusive. */
 export const MAX_APPOINTMENT_LIST_DAYS = 31;
 
+export const APPOINTMENTS_DEFAULT_PAGE_SIZE = 200;
 export const listAppointmentsQuerySchema = z
   .object({
     from: realLocalDateSchema,
@@ -85,14 +87,16 @@ export const listAppointmentsQuerySchema = z
     customerId: uuidSchema.optional(),
     serviceId: uuidSchema.optional(),
     status: z.enum(APPOINTMENT_STATUSES).optional(),
-    limit: z.coerce.number().int().positive().max(500).default(200),
+    ...pageFields(APPOINTMENTS_DEFAULT_PAGE_SIZE, 500),
   })
   .strict()
+  .refine(...pageSizeOrLimit)
   .refine((query) => query.to >= query.from, { message: "to must be on or after from", path: ["to"] })
   .refine((query) => inclusiveDayCount(query.from, query.to) <= MAX_APPOINTMENT_LIST_DAYS, {
     message: `the requested range cannot exceed ${MAX_APPOINTMENT_LIST_DAYS} days`,
     path: ["to"],
   });
+export type ListAppointmentsQuery = z.infer<typeof listAppointmentsQuerySchema>;
 
 /** F27A §40: one local date, one Service — both required. */
 export const bookableSlotsQuerySchema = z

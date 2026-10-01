@@ -18,7 +18,10 @@ Filters exist and are validated by strict Zod schemas, but are undocumented as a
 - Conventions (names already in use, now documented): `status` (enum), `q` (case-insensitive substring on the
   resource name), `<resource>Id` (UUID foreign-key equality), `from`/`to` (date or date-time range, inclusive,
   validated `to ≥ from`).
-- `q` is kept (not renamed `search`): it is the current public name and the Console sends it.
+- `q` is kept (not renamed `search`): it is the current public name and the Console sends it. It matches a
+  case-insensitive substring of the resource name (customers: name, e-mail **or** phone). `%`, `_` and `\` in `q` are
+  matched **literally** — found in F30: they were passed into `ILIKE` unescaped, so `q=%` matched every row
+  (parameterized, so never SQL injection, but wrong results).
 - Boolean filters accept exactly `true` / `false` (`zeroStock`). Anything else → 400.
 - No new filters are added to business lists in F30; the audit list (ADR-055) defines its own.
 

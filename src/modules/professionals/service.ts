@@ -4,6 +4,7 @@ import { recordAuditEvent } from "../audit/service.js";
 import { getService } from "../services/repository.js";
 import { ConflictError, NotFoundError, ProfessionalArchivedError, ServiceArchivedError, isUniqueViolationError } from "../../shared/errors.js";
 import {
+  countProfessionals,
   deleteAssociation,
   getProfessional,
   insertAssociation,
@@ -14,6 +15,10 @@ import {
   type ProfessionalFilters,
   type TenantContext,
 } from "./repository.js";
+import { PROFESSIONALS_DEFAULT_PAGE_SIZE, type ListProfessionalsQuery } from "./schemas.js";
+import { pageRequest, type Page } from "../../shared/listing.js";
+
+type ProfessionalItem = Awaited<ReturnType<typeof listProfessionals>>[number];
 
 export interface Actor {
   type: "user" | "service";
@@ -52,6 +57,17 @@ export async function createProfessional(
 
 export async function listAllProfessionals(tenant: TenantContext, filters: ProfessionalFilters) {
   return listProfessionals(tenant, filters);
+}
+
+/** ADR-051: one page + the tenant-scoped total for the same filters. */
+export async function listProfessionalsPage(tenant: TenantContext, query: ListProfessionalsQuery): Promise<Page<ProfessionalItem>> {
+  const { page, pageSize, offset } = pageRequest(query, PROFESSIONALS_DEFAULT_PAGE_SIZE);
+  const { page: _p, pageSize: _s, limit: _l, ...filters } = query;
+  const [items, total] = await Promise.all([
+    listProfessionals(tenant, { ...filters, limit: pageSize, offset }),
+    countProfessionals(tenant, filters),
+  ]);
+  return { items, page, pageSize, total };
 }
 
 export async function getProfessionalOrThrow(tenant: TenantContext, id: string) {

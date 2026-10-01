@@ -4,10 +4,10 @@ import { requireAuthorized } from "../../middleware/requireAuthorized.js";
 import { requireTenantContext } from "../../tenancy/tenantContext.js";
 import { actorFromRequest } from "../../tenancy/actor.js";
 import { paramString, validateUuidParams } from "../../shared/params.js";
-import { ok } from "../../shared/response.js";
+import { ok, okPage } from "../../shared/response.js";
 import { parseBody, parseQuery } from "../../shared/validate.js";
 import { createProductSchema, listProductsQuerySchema, updateProductSchema } from "./schemas.js";
-import { archiveProduct, createProduct, getProductOrThrow, listAllProducts, updateProductOrThrow } from "./service.js";
+import { archiveProduct, createProduct, getProductOrThrow, listProductsPage, updateProductOrThrow } from "./service.js";
 
 export const productsRouter = Router();
 validateUuidParams(productsRouter);
@@ -36,8 +36,7 @@ productsRouter.get(
   async (req, res, next) => {
     try {
       const query = parseQuery(listProductsQuerySchema, req.query);
-      const items = await listAllProducts(req.tenant!, query);
-      ok(res, items);
+      okPage(res, await listProductsPage(req.tenant!, query));
     } catch (error) {
       next(error);
     }

@@ -3,12 +3,18 @@ import { recordUsage } from "../../platform/usage.js";
 import { recordAuditEvent } from "../audit/service.js";
 import { NotFoundError } from "../../shared/errors.js";
 import {
+  countCategories,
   getCategory,
   insertCategory,
   listCategories,
   updateCategory,
+  type CategoryFilters,
   type TenantContext,
 } from "./repository.js";
+import { CATEGORIES_DEFAULT_PAGE_SIZE, type ListCategoriesQuery } from "./schemas.js";
+import { pageRequest, type Page } from "../../shared/listing.js";
+
+type CategoryItem = Awaited<ReturnType<typeof listCategories>>[number];
 
 export interface Actor {
   type: "user" | "service";
@@ -43,8 +49,19 @@ export async function createCategory(
   return category;
 }
 
-export async function listAllCategories(tenant: TenantContext, filters: { status?: "ACTIVE" | "ARCHIVED"; limit: number }) {
+export async function listAllCategories(tenant: TenantContext, filters: CategoryFilters) {
   return listCategories(tenant, filters);
+}
+
+/** ADR-051: one page + the tenant-scoped total for the same filters. */
+export async function listCategoriesPage(tenant: TenantContext, query: ListCategoriesQuery): Promise<Page<CategoryItem>> {
+  const { page, pageSize, offset } = pageRequest(query, CATEGORIES_DEFAULT_PAGE_SIZE);
+  const { page: _p, pageSize: _s, limit: _l, ...filters } = query;
+  const [items, total] = await Promise.all([
+    listCategories(tenant, { ...filters, limit: pageSize, offset }),
+    countCategories(tenant, filters),
+  ]);
+  return { items, page, pageSize, total };
 }
 
 export async function getCategoryOrThrow(tenant: TenantContext, id: string) {

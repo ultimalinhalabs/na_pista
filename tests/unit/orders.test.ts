@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { addOrderItemSchema, createOrderSchema, listOrdersQuerySchema, updateOrderItemSchema, updateOrderSchema } from "../../src/modules/orders/schemas.js";
 import { roleHasPermission } from "../../src/authorization/permissions.js";
+import { pageRequest } from "../../src/shared/listing.js";
 
 const PRODUCT_ID = "11111111-1111-4111-8111-111111111111";
 const CUSTOMER_ID = "22222222-2222-4222-8222-222222222222";
@@ -74,7 +75,8 @@ test("listOrdersQuerySchema: status/customerId/limit bounds", () => {
   assert.equal(listOrdersQuerySchema.safeParse({ limit: 101 }).success, false);
   const defaults = listOrdersQuerySchema.safeParse({});
   assert.equal(defaults.success, true);
-  if (defaults.success) assert.equal(defaults.data.limit, 50);
+  // ADR-051: the default page size (still 50) is applied by pageRequest(), not by the schema.
+  if (defaults.success) assert.equal(pageRequest(defaults.data, 50).pageSize, 50);
 });
 
 /** F23 brief §27: orders.create gates POST /orders; orders.update gates every other mutation (items, customer PATCH, lifecycle) — deliberately not split further. */

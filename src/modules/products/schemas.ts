@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { pageFields, pageSizeOrLimit, sortFields } from "../../shared/listing.js";
 
 const uuidSchema = z.string().uuid();
 
@@ -53,11 +54,15 @@ export const updateProductSchema = z
   .strict();
 
 /** F20 brief §23/§30: basic search + filters, a hard safe limit — no full pagination, no full-text search engine. */
+export const PRODUCTS_DEFAULT_PAGE_SIZE = 50;
 export const listProductsQuerySchema = z
   .object({
     status: z.enum(["ACTIVE", "ARCHIVED"]).optional(),
     categoryId: uuidSchema.optional(),
-    q: z.string().trim().min(1).max(200).optional(),
-    limit: z.coerce.number().int().positive().max(100).default(50),
+    q: z.string().trim().min(1).max(200).optional().meta({ description: "Case-insensitive substring of the product name." }),
+    ...pageFields(PRODUCTS_DEFAULT_PAGE_SIZE, 100),
+    ...sortFields(["createdAt", "name"], "createdAt", "desc"),
   })
-  .strict();
+  .strict()
+  .refine(...pageSizeOrLimit);
+export type ListProductsQuery = z.infer<typeof listProductsQuerySchema>;

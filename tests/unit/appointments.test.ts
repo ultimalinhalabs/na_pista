@@ -25,6 +25,7 @@ import {
   isExclusionViolationError,
 } from "../../src/shared/errors.js";
 import { DEFAULT_CURRENCY } from "../../src/shared/money.js";
+import { pageRequest } from "../../src/shared/listing.js";
 
 /** F27 — pure Appointment logic: time conversion, lifecycle, booking-vs-availability, snapshots, schemas, permissions, error mapping. No DB. */
 
@@ -368,7 +369,8 @@ test("listAppointmentsQuerySchema: from/to REQUIRED; max 31 inclusive days; to >
   assert.equal(listAppointmentsQuerySchema.safeParse({ from: "2026-10-01", to: "2026-11-01" }).success, false, "32 days");
   assert.equal(listAppointmentsQuerySchema.safeParse({ from: "2026-10-02", to: "2026-10-01" }).success, false);
   assert.equal(listAppointmentsQuerySchema.safeParse({ from: "2026-10-01", to: "2026-10-01", limit: "501" }).success, false);
-  assert.equal(listAppointmentsQuerySchema.parse({ from: "2026-10-01", to: "2026-10-01" }).limit, 200);
+  // ADR-051: the default page size (still 200) is applied by pageRequest(), not by the schema.
+  assert.equal(pageRequest(listAppointmentsQuerySchema.parse({ from: "2026-10-01", to: "2026-10-01" }), 200).pageSize, 200);
   assert.equal(MAX_APPOINTMENT_LIST_DAYS, 31);
 });
 

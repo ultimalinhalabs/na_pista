@@ -3,18 +3,23 @@ import { recordUsage } from "../../platform/usage.js";
 import { recordAuditEvent } from "../audit/service.js";
 import { getProduct } from "../products/repository.js";
 import { InsufficientStockError, InventoryNotFoundError, ProductArchivedError, ProductNotFoundError } from "../../shared/errors.js";
+import { pageRequest, type Page } from "../../shared/listing.js";
 import {
+  countBalances,
+  countMovements,
   decreaseBalance,
   getBalance,
   increaseBalance,
   insertMovement,
   listBalances,
   listMovements,
+  type BalanceFilters,
   type BalanceRow,
   type BalanceWithProduct,
   type MovementRow,
   type TenantContext,
 } from "./repository.js";
+import { INVENTORY_DEFAULT_PAGE_SIZE, MOVEMENTS_DEFAULT_PAGE_SIZE, type ListInventoryQuery, type ListMovementsQuery } from "./schemas.js";
 
 export interface Actor {
   type: "user" | "service";
@@ -29,8 +34,16 @@ const AUDIT_ACTION: Record<MovementType, string> = {
   ADJUSTMENT_OUT: "inventory.adjustment_out",
 };
 
-export async function listAllBalances(tenant: TenantContext, filters: { zeroStock?: boolean; limit: number }) {
+export async function listAllBalances(tenant: TenantContext, filters: BalanceFilters) {
   return listBalances(tenant, filters);
+}
+
+/** ADR-051: one page + the tenant-scoped total for the same filters. */
+export async function listBalancesPage(tenant: TenantContext, query: ListInventoryQuery): Promise<Page<BalanceWithProduct>> {
+  const { page, pageSize, offset } = pageRequest(query, INVENTORY_DEFAULT_PAGE_SIZE);
+  const { page: _p, pageSize: _s, limit: _l, ...filters } = query;
+  const [items, total] = await Promise.all([listBalances(tenant, { ...filters, limit: pageSize, offset }), countBalances(tenant, filters)]);
+  return { items, page, pageSize, total };
 }
 
 export async function getBalanceOrThrow(tenant: TenantContext, productId: string): Promise<BalanceWithProduct> {
@@ -43,10 +56,19 @@ export async function getBalanceOrThrow(tenant: TenantContext, productId: string
   return balance;
 }
 
-export async function listAllMovements(tenant: TenantContext, productId: string, filters: { limit: number }): Promise<MovementRow[]> {
+export async function listAllMovements(tenant: TenantContext, productId: string, filters: { limit: number; offset?: number }): Promise<MovementRow[]> {
   const product = await getProduct(tenant, productId);
   if (!product) throw new ProductNotFoundError();
   return listMovements(tenant, productId, filters);
+}
+
+/** ADR-051: one page of a product's movements + their total. PRODUCT_NOT_FOUND first, as before. */
+export async function listMovementsPage(tenant: TenantContext, productId: string, query: ListMovementsQuery): Promise<Page<MovementRow>> {
+  const { page, pageSize, offset } = pageRequest(query, MOVEMENTS_DEFAULT_PAGE_SIZE);
+  const product = await getProduct(tenant, productId);
+  if (!product) throw new ProductNotFoundError();
+  const [items, total] = await Promise.all([listMovements(tenant, productId, { limit: pageSize, offset }), countMovements(tenant, productId)]);
+  return { items, page, pageSize, total };
 }
 
 /** Structurally the same executor shape every repository function already accepts (`Pick<typeof db, ...>`) — a transaction (`tx`) satisfies this. */

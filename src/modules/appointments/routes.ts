@@ -4,7 +4,7 @@ import { requireAuthorized } from "../../middleware/requireAuthorized.js";
 import { requireTenantContext } from "../../tenancy/tenantContext.js";
 import { actorFromRequest } from "../../tenancy/actor.js";
 import { paramString, validateUuidParams } from "../../shared/params.js";
-import { ok } from "../../shared/response.js";
+import { ok, okPage } from "../../shared/response.js";
 import { parseBody, parseQuery } from "../../shared/validate.js";
 import { bookableSlotsQuerySchema, cancelAppointmentSchema, createAppointmentSchema, listAppointmentsQuerySchema, noShowAppointmentSchema, updateAppointmentSchema } from "./schemas.js";
 import {
@@ -13,7 +13,7 @@ import {
   createAppointment,
   getAppointmentOrThrow,
   getBookableSlotsOrThrow,
-  listAppointmentsOrThrow,
+  listAppointmentsPage,
   markAppointmentNoShow,
   updateAppointmentOrThrow,
 } from "./service.js";
@@ -43,7 +43,7 @@ appointmentsRouter.post("/organizations/:organizationId/appointments", ...GATE, 
 appointmentsRouter.get("/organizations/:organizationId/appointments", ...GATE, requireAuthorized("appointments.read", "catalog.read"), async (req, res, next) => {
   try {
     const query = parseQuery(listAppointmentsQuerySchema, req.query);
-    ok(res, await listAppointmentsOrThrow(req.tenant!, query));
+    okPage(res, await listAppointmentsPage(req.tenant!, query));
   } catch (error) {
     next(error);
   }

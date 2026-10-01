@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { pageFields, pageSizeOrLimit, sortFields } from "../../shared/listing.js";
 import { quantitySchema } from "../inventory/schemas.js";
 
 const uuidSchema = z.string().uuid();
@@ -54,10 +55,14 @@ export const updateOrderSchema = z
   })
   .strict();
 
+export const ORDERS_DEFAULT_PAGE_SIZE = 50;
 export const listOrdersQuerySchema = z
   .object({
     status: z.enum(["DRAFT", "CONFIRMED", "COMPLETED", "CANCELED"]).optional(),
     customerId: uuidSchema.optional(),
-    limit: z.coerce.number().int().positive().max(100).default(50),
+    ...pageFields(ORDERS_DEFAULT_PAGE_SIZE, 100),
+    ...sortFields(["createdAt", "updatedAt"], "createdAt", "desc"),
   })
-  .strict();
+  .strict()
+  .refine(...pageSizeOrLimit);
+export type ListOrdersQuery = z.infer<typeof listOrdersQuerySchema>;

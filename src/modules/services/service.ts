@@ -2,7 +2,19 @@ import { db } from "../../db/index.js";
 import { recordUsage } from "../../platform/usage.js";
 import { recordAuditEvent } from "../audit/service.js";
 import { NotFoundError } from "../../shared/errors.js";
-import { getService, insertService, listServices, updateService, type ServiceFilters, type TenantContext } from "./repository.js";
+import {
+  countServices,
+  getService,
+  insertService,
+  listServices,
+  updateService,
+  type ServiceFilters,
+  type TenantContext,
+} from "./repository.js";
+import { SERVICES_DEFAULT_PAGE_SIZE, type ListServicesQuery } from "./schemas.js";
+import { pageRequest, type Page } from "../../shared/listing.js";
+
+type ServiceItem = Awaited<ReturnType<typeof listServices>>[number];
 
 export interface Actor {
   type: "user" | "service";
@@ -42,6 +54,17 @@ export async function createService(
 
 export async function listAllServices(tenant: TenantContext, filters: ServiceFilters) {
   return listServices(tenant, filters);
+}
+
+/** ADR-051: one page + the tenant-scoped total for the same filters. */
+export async function listServicesPage(tenant: TenantContext, query: ListServicesQuery): Promise<Page<ServiceItem>> {
+  const { page, pageSize, offset } = pageRequest(query, SERVICES_DEFAULT_PAGE_SIZE);
+  const { page: _p, pageSize: _s, limit: _l, ...filters } = query;
+  const [items, total] = await Promise.all([
+    listServices(tenant, { ...filters, limit: pageSize, offset }),
+    countServices(tenant, filters),
+  ]);
+  return { items, page, pageSize, total };
 }
 
 export async function getServiceOrThrow(tenant: TenantContext, id: string) {

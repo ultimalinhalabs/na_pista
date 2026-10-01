@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createProfessionalSchema, listProfessionalsQuerySchema, updateProfessionalSchema } from "../../src/modules/professionals/schemas.js";
 import { roleHasPermission } from "../../src/authorization/permissions.js";
+import { pageRequest } from "../../src/shared/listing.js";
 
 /** F25 brief §36: valid create. */
 test("createProfessionalSchema: a valid professional (name only) is accepted", () => {
@@ -113,7 +114,8 @@ test("listProfessionalsQuerySchema: status/q/serviceId/limit bounds", () => {
   assert.equal(listProfessionalsQuerySchema.safeParse({ limit: 101 }).success, false);
   const defaults = listProfessionalsQuerySchema.safeParse({});
   assert.equal(defaults.success, true);
-  if (defaults.success) assert.equal(defaults.data.limit, 50);
+  // ADR-051: the default page size (still 50) is applied by pageRequest(), not by the schema.
+  if (defaults.success) assert.equal(pageRequest(defaults.data, 50).pageSize, 50);
 });
 
 /** authorization (F25 brief §16, ADR-036 §8) */

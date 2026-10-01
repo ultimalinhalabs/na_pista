@@ -4,10 +4,10 @@ import { requireAuthorized } from "../../middleware/requireAuthorized.js";
 import { requireTenantContext } from "../../tenancy/tenantContext.js";
 import { actorFromRequest } from "../../tenancy/actor.js";
 import { paramString, validateUuidParams } from "../../shared/params.js";
-import { ok } from "../../shared/response.js";
+import { ok, okPage } from "../../shared/response.js";
 import { parseBody, parseQuery } from "../../shared/validate.js";
 import { createCategorySchema, listCategoriesQuerySchema, updateCategorySchema } from "./schemas.js";
-import { archiveCategory, createCategory, getCategoryOrThrow, listAllCategories, updateCategoryOrThrow } from "./service.js";
+import { archiveCategory, createCategory, getCategoryOrThrow, listCategoriesPage, updateCategoryOrThrow } from "./service.js";
 
 export const categoriesRouter = Router();
 validateUuidParams(categoriesRouter);
@@ -36,8 +36,7 @@ categoriesRouter.get(
   async (req, res, next) => {
     try {
       const query = parseQuery(listCategoriesQuerySchema, req.query);
-      const items = await listAllCategories(req.tenant!, query);
-      ok(res, items);
+      okPage(res, await listCategoriesPage(req.tenant!, query));
     } catch (error) {
       next(error);
     }

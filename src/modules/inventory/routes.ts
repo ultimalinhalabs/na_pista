@@ -6,10 +6,10 @@ import { actorFromRequest } from "../../tenancy/actor.js";
 import { paramString, validateUuidParams } from "../../shared/params.js";
 import { ForbiddenError } from "../../shared/errors.js";
 import { roleHasPermission } from "../../authorization/permissions.js";
-import { ok } from "../../shared/response.js";
+import { ok, okPage } from "../../shared/response.js";
 import { parseBody, parseQuery } from "../../shared/validate.js";
 import { createMovementSchema, listInventoryQuerySchema, listMovementsQuerySchema } from "./schemas.js";
-import { createMovement, getBalanceOrThrow, listAllBalances, listAllMovements } from "./service.js";
+import { createMovement, getBalanceOrThrow, listBalancesPage, listMovementsPage } from "./service.js";
 
 export const inventoryRouter = Router();
 validateUuidParams(inventoryRouter);
@@ -23,8 +23,7 @@ inventoryRouter.get(
   async (req, res, next) => {
     try {
       const query = parseQuery(listInventoryQuerySchema, req.query);
-      const items = await listAllBalances(req.tenant!, query);
-      ok(res, items);
+      okPage(res, await listBalancesPage(req.tenant!, query));
     } catch (error) {
       next(error);
     }
@@ -52,8 +51,7 @@ inventoryRouter.get(
   async (req, res, next) => {
     try {
       const query = parseQuery(listMovementsQuerySchema, req.query);
-      const movements = await listAllMovements(req.tenant!, paramString(req.params.productId)!, query);
-      ok(res, movements);
+      okPage(res, await listMovementsPage(req.tenant!, paramString(req.params.productId)!, query));
     } catch (error) {
       next(error);
     }

@@ -104,12 +104,14 @@ function pathParameters(path: string) {
 function queryParameters(query: z.ZodObject) {
   const json = inputSchema(query) as { properties?: Record<string, Json>; required?: string[] };
   return Object.entries(json.properties ?? {}).map(([name, schema]) => {
-    const { description, ...rest } = schema as Json & { description?: string };
+    const { description, deprecated, ...rest } = schema as Json & { description?: string; deprecated?: boolean };
     return {
       name,
       in: "query",
       required: (json.required ?? []).includes(name) && !("default" in rest),
       ...(description ? { description } : {}),
+      // Parameter-level, where OpenAPI tooling looks for it.
+      ...(deprecated ? { deprecated: true } : {}),
       schema: rest,
     };
   });

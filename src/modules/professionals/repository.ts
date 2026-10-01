@@ -1,6 +1,7 @@
-import { and, desc, eq, ilike, inArray } from "drizzle-orm";
+import { and, count, desc, eq, ilike, inArray, type SQL } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { professionalServices, professionals, services } from "../../db/schema/index.js";
+import { likeSubstring, orderByAllowlisted } from "../../shared/listing.js";
 
 /** tenancy.md §3 layer 3: the only place with SQL for professionals/professional_services, requires a TenantContext (F25 brief §20). */
 export interface TenantContext {
@@ -34,19 +35,26 @@ export async function insertProfessional(
   return row!;
 }
 
+/** `serviceId` filters to Professionals associated (via professional_services) with that Service — ADR-037/F25A §14. */
 export interface ProfessionalFilters {
   status?: "ACTIVE" | "ARCHIVED";
   q?: string;
   serviceId?: string;
   limit: number;
+  offset?: number;
+  sort?: ProfessionalSort;
+  order?: "asc" | "desc";
 }
 
-/** `serviceId` filters to Professionals associated (via professional_services) with that Service — ADR-037/F25A §14. */
-export async function listProfessionals(tenant: TenantContext, filters: ProfessionalFilters, executor: Executor = db) {
-  assertTenant(tenant);
+/** ADR-052: public sort name -> column. The only columns a client can sort by. */
+export const PROFESSIONALS_SORT_COLUMNS = { createdAt: professionals.createdAt, name: professionals.name };
+export type ProfessionalSort = keyof typeof PROFESSIONALS_SORT_COLUMNS;
+
+/** One WHERE for both the page and its count — `total` can never use a different tenant filter than the rows. */
+function professionalsConditions(tenant: TenantContext, filters: Omit<ProfessionalFilters, "limit">): SQL | undefined {
   const conditions = [eq(professionals.organizationId, tenant.organizationId)];
   if (filters.status) conditions.push(eq(professionals.status, filters.status));
-  if (filters.q) conditions.push(ilike(professionals.name, `%${filters.q}%`));
+  if (filters.q) conditions.push(ilike(professionals.name, likeSubstring(filters.q)));
   if (filters.serviceId) {
     conditions.push(
       inArray(
@@ -58,12 +66,25 @@ export async function listProfessionals(tenant: TenantContext, filters: Professi
       ),
     );
   }
-  return executor
+  return and(...conditions);
+}
+
+export async function listProfessionals(tenant: TenantContext, filters: ProfessionalFilters, executor: Executor = db) {
+  assertTenant(tenant);
+  const rows = await executor
     .select()
     .from(professionals)
-    .where(and(...conditions))
-    .orderBy(desc(professionals.createdAt))
-    .limit(filters.limit);
+    .where(professionalsConditions(tenant, filters))
+    .orderBy(...orderByAllowlisted(PROFESSIONALS_SORT_COLUMNS, professionals.id, filters.sort ?? "createdAt", filters.order ?? "desc"))
+    .limit(filters.limit)
+    .offset(filters.offset ?? 0);
+  return rows;
+}
+
+export async function countProfessionals(tenant: TenantContext, filters: Omit<ProfessionalFilters, "limit">, executor: Executor = db): Promise<number> {
+  assertTenant(tenant);
+  const [row] = await executor.select({ total: count() }).from(professionals).where(professionalsConditions(tenant, filters));
+  return row?.total ?? 0;
 }
 
 /** Another organization's professional id resolves to `undefined` — the service layer turns that into 404 (tenancy.md §3). Intentionally NOT `getProfessionalById(id)` alone — every read requires a TenantContext (F25 brief §20). */
