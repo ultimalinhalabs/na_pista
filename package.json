@@ -23,6 +23,7 @@
     "mv:seed": "tsx scripts/manual-validation-seed.ts",
     "mv:teardown": "tsx scripts/manual-validation-teardown.ts",
     "credentials:provision": "tsx scripts/provision-platform-credentials.ts",
+    "demo:o-partir-do-pao": "tsx scripts/demo-o-partir-do-pao.ts",
     "openapi:generate": "tsx scripts/generate-openapi.ts"
   },
   "dependencies": {
