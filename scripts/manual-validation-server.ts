@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { loadManualValidationFixtures } from "./manual-validation-fixtures.js";
+import { assertLocalScriptTargets } from "./scriptTargetGuard.js";
 
 /**
  * DEV-ONLY launcher for manual validation (docs/manual-validation.md).
@@ -23,6 +24,11 @@ import { loadManualValidationFixtures } from "./manual-validation-fixtures.js";
  *
  * Usage: npm run mv:server
  */
+assertLocalScriptTargets("mv:server", {
+  NA_PISTA_DATABASE_URL: process.env.NA_PISTA_DATABASE_URL,
+  PLATFORM_API_URL: process.env.PLATFORM_API_URL,
+});
+
 const fixtures = loadManualValidationFixtures();
 const { registerServiceCredential } = await import("../src/platform/serviceAuth.js");
 for (const [key, org] of Object.entries(fixtures.organizations)) {

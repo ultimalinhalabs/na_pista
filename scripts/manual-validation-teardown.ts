@@ -2,6 +2,7 @@ import "dotenv/config";
 import { rmSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { loadManualValidationFixtures } from "./manual-validation-fixtures.js";
+import { assertLocalScriptTargets } from "./scriptTargetGuard.js";
 
 /**
  * Removes Na Pista's OWN rows for the manual-validation organizations (ids
@@ -30,6 +31,8 @@ const TABLES = [
   "organization_settings",
   "audit_events",
 ] as const;
+
+assertLocalScriptTargets("mv:teardown", { NA_PISTA_DATABASE_URL: process.env.NA_PISTA_DATABASE_URL });
 
 const fixtures = loadManualValidationFixtures();
 const organizationIds = Object.values(fixtures.organizations).map((org) => org.id);

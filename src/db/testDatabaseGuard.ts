@@ -7,6 +7,11 @@
  */
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
 
+/** Loopback only — shared with the dev-script target guard (scripts/scriptTargetGuard.ts). */
+export function isLocalHostname(hostname: string): boolean {
+  return LOCAL_HOSTS.has(hostname.toLowerCase());
+}
+
 export class UnsafeTestDatabaseError extends Error {
   constructor(message: string) {
     super(`[test-database-guard] ${message}`);
@@ -25,7 +30,7 @@ export function assertSafeTestDatabaseUrl(databaseUrl: string, allowRemote?: str
   } catch {
     throw new UnsafeTestDatabaseError("NA_PISTA_DATABASE_URL is not a valid connection URL.");
   }
-  if (!LOCAL_HOSTS.has(host) && allowRemote !== "true") {
+  if (!isLocalHostname(host) && allowRemote !== "true") {
     throw new UnsafeTestDatabaseError(
       `refusing to run tests against a non-local database (${host}). Point NA_PISTA_DATABASE_URL at a local/disposable Postgres, ` +
         "or set TEST_DATABASE_ALLOW_REMOTE=true only for a remote database dedicated to tests.",
