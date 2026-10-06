@@ -1,6 +1,12 @@
 import type { NextFunction, Request, Response } from "express";
-import { membershipFor } from "../platform/membership.js";
-import { ForbiddenError, UnauthorizedError } from "../shared/errors.js";
+import { env } from "../config/env.js";
+import { effectiveNaPistaRoleKey, hasNaPistaApplicationAccess, isOrganizationSuspended, membershipFor } from "../platform/membership.js";
+import {
+  ApplicationAccessRequiredError,
+  ForbiddenError,
+  OrganizationSuspendedError,
+  UnauthorizedError,
+} from "../shared/errors.js";
 import { paramString } from "../shared/params.js";
 
 /**
@@ -29,10 +35,15 @@ export function requireTenantContext(paramName = "organizationId") {
     if (req.auth && req.identity) {
       const membership = membershipFor(req.identity, organizationId);
       if (!membership) return next(new ForbiddenError("No active membership in this organization"));
+      // Fase 6 — UL statuses, read from the Platform (never a local authority).
+      if (isOrganizationSuspended(membership)) return next(new OrganizationSuspendedError());
+      if (env.NA_PISTA_REQUIRE_UL_APPLICATION_ACCESS === "true" && !hasNaPistaApplicationAccess(membership)) {
+        return next(new ApplicationAccessRequiredError());
+      }
       req.tenant = {
         organizationId,
         actorType: "human",
-        roleKey: membership.roleKey,
+        roleKey: effectiveNaPistaRoleKey(membership),
         userId: req.auth.userId,
       };
       return next();

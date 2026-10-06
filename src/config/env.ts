@@ -29,6 +29,13 @@ const schema = z
     NA_PISTA_DB_SCHEMA: z.string().min(1).default("na_pista"),
     NA_PISTA_ALLOWED_ORIGINS: z.string().min(1).default("http://localhost:3010"),
     NA_PISTA_CREDENTIAL_ENCRYPTION_KEY: credentialKey,
+    /**
+     * Fase 6 (UL Platform): when "true", a human caller also needs the organization's UL
+     * application access to NA_PISTA (GET /v1/me → memberships[].applications). Off by default:
+     * existing organizations have no explicit access rows yet; turn on only after the access
+     * backfill is authorized and applied.
+     */
+    NA_PISTA_REQUIRE_UL_APPLICATION_ACCESS: z.enum(["true", "false"]).default("false"),
   })
   .superRefine((value, ctx) => {
     if (value.NODE_ENV === "production" && !value.NA_PISTA_CREDENTIAL_ENCRYPTION_KEY) {

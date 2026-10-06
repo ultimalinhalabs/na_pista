@@ -74,6 +74,27 @@ export class LimitExceededError extends AppError {
 }
 
 /** The Platform (or Na Pista's own DB) could not be reached / did not answer in time. Fail closed, never silently allow. */
+/** Fase 6 — the UL Platform reports this user as disabled. Na Pista never decides this itself. */
+export class AccountDisabledError extends AppError {
+  constructor(message = "This account is disabled") {
+    super(403, "ACCOUNT_DISABLED", message);
+  }
+}
+
+/** Fase 6 — the UL Platform reports this organization as suspended. */
+export class OrganizationSuspendedError extends AppError {
+  constructor(message = "This organization is suspended") {
+    super(403, "ORGANIZATION_SUSPENDED", message);
+  }
+}
+
+/** Fase 6 — the organization has no active UL application access to NA_PISTA (only when enforcement is on). */
+export class ApplicationAccessRequiredError extends AppError {
+  constructor(message = "This organization has no access to Na Pista") {
+    super(403, "APPLICATION_ACCESS_REQUIRED", message);
+  }
+}
+
 export class UpstreamUnavailableError extends AppError {
   constructor(message = "A required upstream dependency is unavailable") {
     super(503, "UPSTREAM_UNAVAILABLE", message);
