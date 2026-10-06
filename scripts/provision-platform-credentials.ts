@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { assertLocalScriptTargets } from "./scriptTargetGuard.js";
 
 /**
  * F29A dev bootstrap: stores each fixture organization's platform-facing
@@ -24,6 +25,11 @@ interface FixtureOrganization {
   id: string;
   credentials?: { platformFacing?: { secret?: string } };
 }
+
+assertLocalScriptTargets("credentials:provision", {
+  NA_PISTA_DATABASE_URL: process.env.NA_PISTA_DATABASE_URL,
+  PLATFORM_API_URL: process.env.PLATFORM_API_URL,
+});
 
 const args = process.argv.slice(2);
 const fixturesArg = args[args.indexOf("--fixtures") + 1];

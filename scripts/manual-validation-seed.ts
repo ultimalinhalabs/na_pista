@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { loadManualValidationFixtures, type ManualValidationFixtures } from "./manual-validation-fixtures.js";
+import { assertLocalScriptTargets } from "./scriptTargetGuard.js";
 
 /**
  * Seeds the two manual-validation organizations with realistic Na Pista data
@@ -20,6 +21,13 @@ import { loadManualValidationFixtures, type ManualValidationFixtures } from "./m
  */
 const API = process.env.NA_PISTA_API_URL ?? `http://127.0.0.1:${process.env.PORT ?? 4200}/v1`;
 const TZ = "Africa/Luanda";
+
+// The API it calls is the local dev server, which writes to this same .env database.
+assertLocalScriptTargets("mv:seed", {
+  NA_PISTA_DATABASE_URL: process.env.NA_PISTA_DATABASE_URL,
+  NA_PISTA_API_URL: API,
+  PLATFORM_API_URL: process.env.PLATFORM_API_URL,
+});
 
 async function signIn(fixtures: ManualValidationFixtures, email: string, password: string): Promise<string> {
   const res = await fetch(new URL("/auth/v1/token?grant_type=password", fixtures.supabaseUrl), {

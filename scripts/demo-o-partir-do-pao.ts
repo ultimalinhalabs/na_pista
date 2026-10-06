@@ -2,6 +2,7 @@ import "dotenv/config";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { loadManualValidationFixtures, type ManualValidationFixtures } from "./manual-validation-fixtures.js";
+import { assertLocalScriptTargets } from "./scriptTargetGuard.js";
 
 /**
  * F31 — DEMONSTRATION tenant for "O Partir do Pão" (Pastelaria · Cafetaria ·
@@ -36,6 +37,13 @@ const DEMO_FIXTURE = resolve(".fixtures/demo-o-partir-do-pao.json");
 const SLUG = "o-partir-do-pao-demo";
 const NAME = "O Partir do Pão";
 const TZ = "Africa/Luanda";
+
+// Fail closed before anything is created (organization, memberships, subscription, API key, credential, catalog).
+assertLocalScriptTargets("demo:o-partir-do-pao", {
+  NA_PISTA_DATABASE_URL: process.env.NA_PISTA_DATABASE_URL,
+  NA_PISTA_API_URL: API,
+  PLATFORM_API_URL: process.env.PLATFORM_API_URL,
+});
 
 interface DemoFixture {
   createdAt: string;
@@ -168,6 +176,7 @@ async function seedCatalog(fixtures: ManualValidationFixtures, ownerToken: strin
 }
 
 const fixtures = loadManualValidationFixtures();
+assertLocalScriptTargets("demo:o-partir-do-pao", { "fixtures.platformBaseUrl": fixtures.platformBaseUrl });
 const owner = fixtures.organizations.PRODUCT_REFERENCE.users.OWNER;
 const ownerToken = await signIn(fixtures, owner.email, owner.password);
 const demo = await ensureOrganization(fixtures, ownerToken);
