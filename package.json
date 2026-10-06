@@ -21,7 +21,10 @@
     "test": "npm run test:unit && npm run test:integration && npm run test:e2e",
     "mv:server": "tsx scripts/manual-validation-server.ts",
     "mv:seed": "tsx scripts/manual-validation-seed.ts",
-    "mv:teardown": "tsx scripts/manual-validation-teardown.ts"
+    "mv:teardown": "tsx scripts/manual-validation-teardown.ts",
+    "credentials:provision": "tsx scripts/provision-platform-credentials.ts",
+    "demo:o-partir-do-pao": "tsx scripts/demo-o-partir-do-pao.ts",
+    "openapi:generate": "tsx scripts/generate-openapi.ts"
   },
   "dependencies": {
     "cors": "^2.8.6",
@@ -34,6 +37,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
+    "@readme/openapi-parser": "^9.0.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.1",
     "@types/node": "^20.17.19",

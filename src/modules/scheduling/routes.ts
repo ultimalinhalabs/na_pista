@@ -3,8 +3,9 @@ import { CATALOG_CAPABILITY_KEY, requireCapability } from "../../middleware/requ
 import { requireAuthorized } from "../../middleware/requireAuthorized.js";
 import { requireTenantContext } from "../../tenancy/tenantContext.js";
 import { actorFromRequest } from "../../tenancy/actor.js";
-import { paramString } from "../../shared/params.js";
+import { paramString, validateUuidParams } from "../../shared/params.js";
 import { ok } from "../../shared/response.js";
+import { parseBody, parseQuery } from "../../shared/validate.js";
 import { availabilityQuerySchema, createExceptionSchema, replaceScheduleSchema } from "./schemas.js";
 import {
   createExceptionOrThrow,
@@ -24,6 +25,7 @@ import {
  * not the F26A brief's illustrative names blindly.
  */
 export const schedulingRouter = Router();
+validateUuidParams(schedulingRouter);
 
 const GATE = [requireTenantContext(), requireCapability(CATALOG_CAPABILITY_KEY)] as const;
 
@@ -48,7 +50,7 @@ schedulingRouter.put(
   requireAuthorized("scheduling.update", "catalog.write"),
   async (req, res, next) => {
     try {
-      const body = replaceScheduleSchema.parse(req.body);
+      const body = parseBody(replaceScheduleSchema, req.body);
       const rules = await replaceScheduleOrThrow(req.tenant!, actorFromRequest(req), req.requestId, paramString(req.params.professionalId)!, body.rules);
       ok(res, rules);
     } catch (error) {
@@ -77,7 +79,7 @@ schedulingRouter.post(
   requireAuthorized("scheduling.create", "catalog.write"),
   async (req, res, next) => {
     try {
-      const body = createExceptionSchema.parse(req.body);
+      const body = parseBody(createExceptionSchema, req.body);
       const exception = await createExceptionOrThrow(req.tenant!, actorFromRequest(req), req.requestId, paramString(req.params.professionalId)!, body);
       ok(res, exception, 201);
     } catch (error) {
@@ -106,7 +108,7 @@ schedulingRouter.get(
   requireAuthorized("scheduling.read", "catalog.read"),
   async (req, res, next) => {
     try {
-      const query = availabilityQuerySchema.parse(req.query);
+      const query = parseQuery(availabilityQuerySchema, req.query);
       const availability = await getAvailabilityOrThrow(req.tenant!, paramString(req.params.professionalId)!, query);
       ok(res, availability);
     } catch (error) {

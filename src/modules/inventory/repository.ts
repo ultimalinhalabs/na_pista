@@ -1,6 +1,7 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, count, desc, eq, sql, type SQL } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { inventoryBalances, products, stockMovements } from "../../db/schema/index.js";
+import { orderByAllowlisted } from "../../shared/listing.js";
 
 /** tenancy.md §3 layer 3: requires a TenantContext, same pattern as every other Na Pista module. */
 export interface TenantContext {
@@ -30,14 +31,30 @@ export interface BalanceWithProduct extends BalanceRow {
   productStatus: "ACTIVE" | "ARCHIVED";
 }
 
-export async function listBalances(
-  tenant: TenantContext,
-  filters: { zeroStock?: boolean; limit: number },
-  executor: Executor = db,
-): Promise<BalanceWithProduct[]> {
-  assertTenant(tenant);
+export interface BalanceFilters {
+  zeroStock?: boolean;
+  limit: number;
+  offset?: number;
+  sort?: BalanceSort;
+  order?: "asc" | "desc";
+}
+
+/** ADR-052: public sort name -> column. */
+export const BALANCE_SORT_COLUMNS = { updatedAt: inventoryBalances.updatedAt, quantity: inventoryBalances.quantity };
+export type BalanceSort = keyof typeof BALANCE_SORT_COLUMNS;
+
+/** One WHERE for both the page and its count. */
+function balanceConditions(tenant: TenantContext, filters: Omit<BalanceFilters, "limit">): SQL | undefined {
   const conditions = [eq(inventoryBalances.organizationId, tenant.organizationId)];
   if (filters.zeroStock) conditions.push(eq(inventoryBalances.quantity, "0"));
+  return and(...conditions);
+}
+
+/** Tenant-scoped on both sides of the join. */
+const balanceProductJoin = and(eq(products.organizationId, inventoryBalances.organizationId), eq(products.id, inventoryBalances.productId));
+
+export async function listBalances(tenant: TenantContext, filters: BalanceFilters, executor: Executor = db): Promise<BalanceWithProduct[]> {
+  assertTenant(tenant);
   const rows = await executor
     .select({
       id: inventoryBalances.id,
@@ -51,11 +68,22 @@ export async function listBalances(
       productStatus: products.status,
     })
     .from(inventoryBalances)
-    .innerJoin(products, and(eq(products.organizationId, inventoryBalances.organizationId), eq(products.id, inventoryBalances.productId)))
-    .where(and(...conditions))
-    .orderBy(desc(inventoryBalances.updatedAt))
-    .limit(filters.limit);
+    .innerJoin(products, balanceProductJoin)
+    .where(balanceConditions(tenant, filters))
+    .orderBy(...orderByAllowlisted(BALANCE_SORT_COLUMNS, inventoryBalances.id, filters.sort ?? "updatedAt", filters.order ?? "desc"))
+    .limit(filters.limit)
+    .offset(filters.offset ?? 0);
   return rows as BalanceWithProduct[];
+}
+
+export async function countBalances(tenant: TenantContext, filters: Omit<BalanceFilters, "limit">, executor: Executor = db): Promise<number> {
+  assertTenant(tenant);
+  const [row] = await executor
+    .select({ total: count() })
+    .from(inventoryBalances)
+    .innerJoin(products, balanceProductJoin)
+    .where(balanceConditions(tenant, filters));
+  return row?.total ?? 0;
 }
 
 export async function getBalance(tenant: TenantContext, productId: string, executor: Executor = db): Promise<BalanceWithProduct | undefined> {
@@ -166,13 +194,29 @@ export async function insertMovement(
   return row! as MovementRow;
 }
 
-export async function listMovements(tenant: TenantContext, productId: string, filters: { limit: number }, executor: Executor = db): Promise<MovementRow[]> {
+const movementConditions = (tenant: TenantContext, productId: string) =>
+  and(eq(stockMovements.organizationId, tenant.organizationId), eq(stockMovements.productId, productId));
+
+/** Chronological by nature (ADR-052: no client sort) — newest first, `id` breaks ties. */
+export async function listMovements(
+  tenant: TenantContext,
+  productId: string,
+  filters: { limit: number; offset?: number },
+  executor: Executor = db,
+): Promise<MovementRow[]> {
   assertTenant(tenant);
   const rows = await executor
     .select()
     .from(stockMovements)
-    .where(and(eq(stockMovements.organizationId, tenant.organizationId), eq(stockMovements.productId, productId)))
-    .orderBy(desc(stockMovements.createdAt))
-    .limit(filters.limit);
+    .where(movementConditions(tenant, productId))
+    .orderBy(desc(stockMovements.createdAt), desc(stockMovements.id))
+    .limit(filters.limit)
+    .offset(filters.offset ?? 0);
   return rows as MovementRow[];
+}
+
+export async function countMovements(tenant: TenantContext, productId: string, executor: Executor = db): Promise<number> {
+  assertTenant(tenant);
+  const [row] = await executor.select({ total: count() }).from(stockMovements).where(movementConditions(tenant, productId));
+  return row?.total ?? 0;
 }

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createServiceSchema, listServicesQuerySchema, updateServiceSchema } from "../../src/modules/services/schemas.js";
 import { roleHasPermission } from "../../src/authorization/permissions.js";
+import { pageRequest } from "../../src/shared/listing.js";
 
 /** F24 brief §19: create valid service. */
 test("createServiceSchema: a valid service (name + durationMinutes) is accepted, price defaults to undefined", () => {
@@ -141,7 +142,8 @@ test("listServicesQuerySchema: status/q/limit bounds", () => {
   assert.equal(listServicesQuerySchema.safeParse({ limit: 101 }).success, false);
   const defaults = listServicesQuerySchema.safeParse({});
   assert.equal(defaults.success, true);
-  if (defaults.success) assert.equal(defaults.data.limit, 50);
+  // ADR-051: the default page size (still 50) is applied by pageRequest(), not by the schema.
+  if (defaults.success) assert.equal(pageRequest(defaults.data, 50).pageSize, 50);
 });
 
 /** authorization (F24 brief §6/§19) */

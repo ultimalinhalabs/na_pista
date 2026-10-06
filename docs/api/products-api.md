@@ -21,7 +21,8 @@ tenant (`:organizationId` validated against real membership or credential scope)
 
 ### `GET /organizations/:organizationId/categories`
 - **Permission:** `categories.read` (all roles) · **Scope:** `catalog.read`.
-- **Query:** `status?: ACTIVE|ARCHIVED`, `limit?: 1-100 (default 50)`.
+- **Query:** `status?: ACTIVE|ARCHIVED`.
+- **Pagination & sorting (F30, ADR-051/052):** `page` (default 1), `pageSize` (default 50, max 100; `limit` = deprecated alias), `sort` ∈ {`createdAt`, `name`} + `order=asc|desc`. The response adds `pagination: { page, pageSize, total, totalPages }` beside `data` — see [pagination.md](pagination.md).
 - **Response `200`:** `Category[]`, newest first.
 
 ### `GET /organizations/:organizationId/categories/:categoryId`
@@ -53,9 +54,9 @@ tenant (`:organizationId` validated against real membership or credential scope)
 
 ### `GET /organizations/:organizationId/products`
 - **Permission:** `products.read` (all roles) · **Scope:** `catalog.read`.
-- **Query:** `status?: ACTIVE|ARCHIVED`, `categoryId?: uuid`, `q?: string (name, case-insensitive substring)`, `limit?: 1-100 (default 50)`.
-- **Response `200`:** `Product[]`, newest first. No offset pagination in this slice — a hard, safe `limit` cap
-  instead (F20 brief §30).
+- **Query:** `status?: ACTIVE|ARCHIVED`, `categoryId?: uuid`, `q?: string (name, case-insensitive substring; `%`/`_` literal)`.
+- **Pagination & sorting (F30, ADR-051/052):** `page` (default 1), `pageSize` (default 50, max 100; `limit` = deprecated alias), `sort` ∈ {`createdAt`, `name`} + `order=asc|desc`. The response adds `pagination: { page, pageSize, total, totalPages }` beside `data` — see [pagination.md](pagination.md).
+- **Response `200`:** `Product[]`, newest first (paginated since F30; before F30 a hard `limit` cap, F20 brief §30).
 
 ### `GET /organizations/:organizationId/products/:productId`
 - Same posture as Categories' detail endpoint — `404` for cross-tenant/nonexistent, uniformly.
@@ -86,8 +87,5 @@ variants, warehouses, barcode/SKU, suppliers, purchasing, POS, invoices, taxes, 
 advanced analytics, price history/price lists.
 
 ## Machine-readable contract
-No OpenAPI document is generated in this pass — the shapes above are hand-written from the real Zod schemas
-(`src/modules/*/schemas.ts`) and route files (`src/modules/*/routes.ts`), the same way F18's `api-boundary.md`
-was written from the Platform's own code. Generating OpenAPI from the Zod schemas is a reasonable follow-up
-(`zod-to-openapi` or similar) — not done here to avoid adding a new dependency/build step without a concrete
-consumer asking for it yet.
+Since F30 (ADR-054): [`openapi.json`](openapi.json) — OpenAPI 3.1, generated from the same Zod schemas the API
+validates with, also served at `GET /v1/openapi.json`.

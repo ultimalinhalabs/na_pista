@@ -3,6 +3,7 @@ import test from "node:test";
 import { createCustomerSchema, updateCustomerSchema, listCustomersQuerySchema } from "../../src/modules/customers/schemas.js";
 import { roleHasPermission } from "../../src/authorization/permissions.js";
 import * as customerRepo from "../../src/modules/customers/repository.js";
+import { pageRequest } from "../../src/shared/listing.js";
 
 /** F21 brief §19 "customer validation". */
 test("createCustomerSchema: name required, everything else optional", () => {
@@ -42,7 +43,8 @@ test("updateCustomerSchema: status transition to ACTIVE/ARCHIVED accepted, anyth
 
 test("listCustomersQuerySchema: search term and limit bounds", () => {
   assert.equal(listCustomersQuerySchema.safeParse({}).success, true);
-  assert.equal(listCustomersQuerySchema.parse({}).limit, 50);
+  // ADR-051: the default page size (still 50) is applied by pageRequest(), not by the schema.
+  assert.equal(pageRequest(listCustomersQuerySchema.parse({}), 50).pageSize, 50);
   assert.equal(listCustomersQuerySchema.safeParse({ limit: "101" }).success, false);
   assert.equal(listCustomersQuerySchema.safeParse({ q: "joão" }).success, true);
 });

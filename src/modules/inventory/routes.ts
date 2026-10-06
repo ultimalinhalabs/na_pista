@@ -3,14 +3,16 @@ import { CATALOG_CAPABILITY_KEY, requireCapability } from "../../middleware/requ
 import { requireAuthorized } from "../../middleware/requireAuthorized.js";
 import { requireTenantContext } from "../../tenancy/tenantContext.js";
 import { actorFromRequest } from "../../tenancy/actor.js";
-import { paramString } from "../../shared/params.js";
+import { paramString, validateUuidParams } from "../../shared/params.js";
 import { ForbiddenError } from "../../shared/errors.js";
 import { roleHasPermission } from "../../authorization/permissions.js";
-import { ok } from "../../shared/response.js";
+import { ok, okPage } from "../../shared/response.js";
+import { parseBody, parseQuery } from "../../shared/validate.js";
 import { createMovementSchema, listInventoryQuerySchema, listMovementsQuerySchema } from "./schemas.js";
-import { createMovement, getBalanceOrThrow, listAllBalances, listAllMovements } from "./service.js";
+import { createMovement, getBalanceOrThrow, listBalancesPage, listMovementsPage } from "./service.js";
 
 export const inventoryRouter = Router();
+validateUuidParams(inventoryRouter);
 
 const GATE = [requireTenantContext(), requireCapability(CATALOG_CAPABILITY_KEY)] as const;
 
@@ -20,9 +22,8 @@ inventoryRouter.get(
   requireAuthorized("inventory.read", "catalog.read"),
   async (req, res, next) => {
     try {
-      const query = listInventoryQuerySchema.parse(req.query);
-      const items = await listAllBalances(req.tenant!, query);
-      ok(res, items);
+      const query = parseQuery(listInventoryQuerySchema, req.query);
+      okPage(res, await listBalancesPage(req.tenant!, query));
     } catch (error) {
       next(error);
     }
@@ -49,9 +50,8 @@ inventoryRouter.get(
   requireAuthorized("inventory.read", "catalog.read"),
   async (req, res, next) => {
     try {
-      const query = listMovementsQuerySchema.parse(req.query);
-      const movements = await listAllMovements(req.tenant!, paramString(req.params.productId)!, query);
-      ok(res, movements);
+      const query = parseQuery(listMovementsQuerySchema, req.query);
+      okPage(res, await listMovementsPage(req.tenant!, paramString(req.params.productId)!, query));
     } catch (error) {
       next(error);
     }
@@ -72,7 +72,7 @@ inventoryRouter.post(
   ...GATE,
   async (req, res, next) => {
     try {
-      const body = createMovementSchema.parse(req.body);
+      const body = parseBody(createMovementSchema, req.body);
       const permission = body.type === "RECEIPT" ? "inventory.create" : "inventory.update";
       const scope = "catalog.write";
 

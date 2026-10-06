@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { pageFields, pageSizeOrLimit, sortFields } from "../../shared/listing.js";
 
 /**
  * F22 brief §4/§29: quantity is precise decimal (`numeric(20,6)` in
@@ -64,15 +65,29 @@ export const createMovementSchema = z
  * it" — it doesn't yet). Documented as a deferred decision, not silently
  * dropped (see docs/f22-report.md).
  */
+export const INVENTORY_DEFAULT_PAGE_SIZE = 50;
+export const MOVEMENTS_DEFAULT_PAGE_SIZE = 50;
+
+/**
+ * ADR-052: exactly "true" or "false". (Before F30 this was `z.coerce.boolean()`,
+ * which turns ANY non-empty string — including "false" — into true.)
+ */
+const queryBoolean = z.enum(["true", "false"]).transform((value) => value === "true");
+
 export const listInventoryQuerySchema = z
   .object({
-    zeroStock: z.coerce.boolean().optional(),
-    limit: z.coerce.number().int().positive().max(100).default(50),
+    zeroStock: queryBoolean.optional().meta({ description: "`true` = only products whose balance is exactly zero; `false` = no filter." }),
+    ...pageFields(INVENTORY_DEFAULT_PAGE_SIZE, 100),
+    ...sortFields(["updatedAt", "quantity"], "updatedAt", "desc"),
   })
-  .strict();
+  .strict()
+  .refine(...pageSizeOrLimit);
+export type ListInventoryQuery = z.infer<typeof listInventoryQuerySchema>;
 
 export const listMovementsQuerySchema = z
   .object({
-    limit: z.coerce.number().int().positive().max(100).default(50),
+    ...pageFields(MOVEMENTS_DEFAULT_PAGE_SIZE, 100),
   })
-  .strict();
+  .strict()
+  .refine(...pageSizeOrLimit);
+export type ListMovementsQuery = z.infer<typeof listMovementsQuerySchema>;

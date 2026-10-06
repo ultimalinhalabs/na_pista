@@ -78,7 +78,7 @@ Permission `appointments.read`. Query (`.strict()`):
 | `from`, `to` | yes | organization-local dates `YYYY-MM-DD`, inclusive, `to ≥ from`, **at most 31 days** |
 | `professionalId`, `customerId`, `serviceId` | no | UUIDs; foreign/unknown ids simply match nothing |
 | `status` | no | `SCHEDULED` \| `COMPLETED` \| `CANCELED` \| `NO_SHOW` (default: all) |
-| `limit` | no | default 200, max 500 |
+| `page`, `pageSize` | no | F30 pagination (ADR-051): `pageSize` default 200, max 500; `limit` = deprecated alias. Response adds `pagination`. Fixed order `startAt, id`. |
 
 Returns appointments **overlapping** `[local midnight of from, local midnight of to + 1)`, ordered by
 `startAt`, then `id`. Requires a configured timezone. No unbounded listing is possible.

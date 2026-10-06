@@ -26,8 +26,8 @@ side directly.
 ## `GET /organizations/:organizationId/professionals`
 - **Permission:** `professionals.read` (all roles) · **Scope:** `catalog.read`.
 - **Query:** `status?: ACTIVE|ARCHIVED`, `q?: string` (name, case-insensitive substring), `serviceId?: uuid`
-  (filter to Professionals associated with that Service, via `professional_services`), `limit?: 1-100
-  (default 50)`.
+  (filter to Professionals associated with that Service, via `professional_services`).
+- **Pagination & sorting (F30, ADR-051/052):** `page` (default 1), `pageSize` (default 50, max 100; `limit` = deprecated alias), `sort` ∈ {`createdAt`, `name`} + `order=asc|desc`. The response adds `pagination: { page, pageSize, total, totalPages }` beside `data` — see [pagination.md](pagination.md).
 - **Response `200`:** `Professional[]`, newest first.
 
 ## `GET /organizations/:organizationId/professionals/:professionalId`

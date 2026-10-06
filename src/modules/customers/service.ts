@@ -2,7 +2,19 @@ import { db } from "../../db/index.js";
 import { recordUsage } from "../../platform/usage.js";
 import { recordAuditEvent } from "../audit/service.js";
 import { NotFoundError } from "../../shared/errors.js";
-import { getCustomer, insertCustomer, listCustomers, updateCustomer, type CustomerFilters, type TenantContext } from "./repository.js";
+import {
+  countCustomers,
+  getCustomer,
+  insertCustomer,
+  listCustomers,
+  updateCustomer,
+  type CustomerFilters,
+  type TenantContext,
+} from "./repository.js";
+import { CUSTOMERS_DEFAULT_PAGE_SIZE, type ListCustomersQuery } from "./schemas.js";
+import { pageRequest, type Page } from "../../shared/listing.js";
+
+type CustomerItem = Awaited<ReturnType<typeof listCustomers>>[number];
 
 export interface Actor {
   type: "user" | "service";
@@ -43,6 +55,17 @@ export async function createCustomer(
 
 export async function listAllCustomers(tenant: TenantContext, filters: CustomerFilters) {
   return listCustomers(tenant, filters);
+}
+
+/** ADR-051: one page + the tenant-scoped total for the same filters. */
+export async function listCustomersPage(tenant: TenantContext, query: ListCustomersQuery): Promise<Page<CustomerItem>> {
+  const { page, pageSize, offset } = pageRequest(query, CUSTOMERS_DEFAULT_PAGE_SIZE);
+  const { page: _p, pageSize: _s, limit: _l, ...filters } = query;
+  const [items, total] = await Promise.all([
+    listCustomers(tenant, { ...filters, limit: pageSize, offset }),
+    countCustomers(tenant, filters),
+  ]);
+  return { items, page, pageSize, total };
 }
 
 export async function getCustomerOrThrow(tenant: TenantContext, id: string) {

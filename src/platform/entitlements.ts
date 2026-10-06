@@ -1,5 +1,5 @@
 import { callPlatform } from "./client.js";
-import { getServiceCredential } from "./serviceAuth.js";
+import { resolvePlatformCredential } from "../modules/platformCredentials/resolver.js";
 import { UpstreamUnavailableError } from "../shared/errors.js";
 
 /**
@@ -79,10 +79,9 @@ export async function fetchEntitlements(organizationId: string, requestId?: stri
   const cached = cache.get(organizationId);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
 
-  const credential = getServiceCredential(organizationId);
-  if (!credential) {
-    throw new UpstreamUnavailableError(`No Na Pista service credential provisioned for organization ${organizationId}`);
-  }
+  // F29A: persisted, encrypted, per-organization credential — fails closed
+  // (503, no Platform request sent) if missing, revoked or undecryptable.
+  const credential = await resolvePlatformCredential(organizationId, { requestId });
 
   const res = await callPlatform<RawEntitlementsResponse>(
     "GET",

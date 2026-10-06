@@ -3,12 +3,14 @@ import { CATALOG_CAPABILITY_KEY, requireCapability } from "../../middleware/requ
 import { requireAuthorized } from "../../middleware/requireAuthorized.js";
 import { requireTenantContext } from "../../tenancy/tenantContext.js";
 import { actorFromRequest } from "../../tenancy/actor.js";
-import { paramString } from "../../shared/params.js";
-import { ok } from "../../shared/response.js";
+import { paramString, validateUuidParams } from "../../shared/params.js";
+import { ok, okPage } from "../../shared/response.js";
+import { parseBody, parseQuery } from "../../shared/validate.js";
 import { createCategorySchema, listCategoriesQuerySchema, updateCategorySchema } from "./schemas.js";
-import { archiveCategory, createCategory, getCategoryOrThrow, listAllCategories, updateCategoryOrThrow } from "./service.js";
+import { archiveCategory, createCategory, getCategoryOrThrow, listCategoriesPage, updateCategoryOrThrow } from "./service.js";
 
 export const categoriesRouter = Router();
+validateUuidParams(categoriesRouter);
 
 const GATE = [requireTenantContext(), requireCapability(CATALOG_CAPABILITY_KEY)] as const;
 
@@ -18,7 +20,7 @@ categoriesRouter.post(
   requireAuthorized("categories.create", "catalog.write"),
   async (req, res, next) => {
     try {
-      const body = createCategorySchema.parse(req.body);
+      const body = parseBody(createCategorySchema, req.body);
       const category = await createCategory(req.tenant!, actorFromRequest(req), req.requestId, body);
       ok(res, category, 201);
     } catch (error) {
@@ -33,9 +35,8 @@ categoriesRouter.get(
   requireAuthorized("categories.read", "catalog.read"),
   async (req, res, next) => {
     try {
-      const query = listCategoriesQuerySchema.parse(req.query);
-      const items = await listAllCategories(req.tenant!, query);
-      ok(res, items);
+      const query = parseQuery(listCategoriesQuerySchema, req.query);
+      okPage(res, await listCategoriesPage(req.tenant!, query));
     } catch (error) {
       next(error);
     }
@@ -62,7 +63,7 @@ categoriesRouter.patch(
   requireAuthorized("categories.update", "catalog.write"),
   async (req, res, next) => {
     try {
-      const body = updateCategorySchema.parse(req.body);
+      const body = parseBody(updateCategorySchema, req.body);
       const category = await updateCategoryOrThrow(
         req.tenant!,
         actorFromRequest(req),

@@ -24,19 +24,19 @@ O brief listava `/v1/products` sem o prefixo; ajustado (permitido pelo brief) po
 | Tema | Regra | Origem |
 |---|---|---|
 | Versionamento | `/v1/...` no path desde o início. Quebras = `/v2`. | CLAUDE.md §9 |
-| Envelope | sucesso `{ "data": ... }`; erro `{ "error": { "code", "message" } }`. | `shared/response.ts` |
-| Códigos de erro | `VALIDATION_ERROR 400`, `UNAUTHORIZED 401`, `FORBIDDEN 403`, `NOT_FOUND 404`, `CONFLICT 409` (iguais ao Platform) + **específicos do Na Pista (PROPOSTA)**: `ENTITLEMENT_REQUIRED 403`, `MODULE_DEPENDENCY_UNMET 403`, `LIMIT_EXCEEDED 409`. Clientes que não conheçam um código tratam pelo status HTTP. | `shared/errors.ts` |
+| Envelope | sucesso `{ "data": ... }` (listas paginadas acrescentam `pagination`, ADR-051); erro `{ "error": { "code", "message", "details"? } }` (ADR-053). | `shared/response.ts` |
+| Códigos de erro | `VALIDATION_ERROR 400`, `UNAUTHORIZED 401`, `FORBIDDEN 403`, `NOT_FOUND 404`, `CONFLICT 409` (iguais ao Platform) + específicos do Na Pista — lista **implementada** em `docs/api/errors.md` (F30; `MODULE_DEPENDENCY_UNMET` nunca foi implementado). Clientes que não conheçam um código tratam pelo status HTTP. | `shared/errors.ts` |
 | Request ID | Aceita `X-Request-ID` válido (`^[A-Za-z0-9._-]{1,128}$`), senão gera; devolve sempre no header; **nunca** no corpo. Propagado nas chamadas ao Platform. | `middleware/requestId.ts` |
 | Input | Validado na fronteira (Zod); rejeita campos desconhecidos. Nunca expõe tabelas como contrato. | CLAUDE.md §9 |
-| Paginação | **Cursor/keyset**: `?cursor=&limit=` (`limit` máx. 100, por omissão a fixar); resposta `{ data: [...], page: { nextCursor } }`. Sem `offset`. | `modules/audit` (padrão existente) |
-| Filtros | Query params **whitelisted por recurso** (ex.: `?status=ACTIVE&categoryId=...&q=`). Nunca filtros arbitrários sobre colunas. | — |
-| Ordenação | `?sort=name,-createdAt`, apenas colunas whitelisted e indexadas; desempate por `id` para cursor estável. | — |
-| Idempotência | POSTs que criam factos com efeitos (**orders, appointments, inventory movements**) aceitam `Idempotency-Key` (header); armazenada por `(organization_id, key)` com hash do pedido; replay → mesma resposta; mesma chave + corpo diferente → `409`. Cria-produto/cliente não precisa (conflitos naturais por SKU/unicidade). | Padrão de `usage` do Platform, adaptado a header |
-| Webhooks | Tratados como eventos externos **re-tentáveis**: receptor idempotente por `X-UL-Event-Id`. | Platform |
-| Health | `GET /v1/health` (sem dependências) e `GET /v1/health/ready` (BD). | `routes/v1/health.ts` |
-| Rate limit | por identidade autenticada (chave/utilizador) em operações sensíveis. | `middleware/rateLimit.ts` |
+| Paginação | **Implementado (F30, ADR-051):** `?page=&pageSize=` (offset) com `pagination: { page, pageSize, total, totalPages }`; `limit` = alias obsoleto. *(A proposta original de cursor nunca foi implementada e foi substituída.)* | `shared/listing.ts` |
+| Filtros | Query params **whitelisted por recurso** (ex.: `?status=ACTIVE&categoryId=...&q=`). Nunca filtros arbitrários sobre colunas. Ver `docs/api/filtering.md` (ADR-052). | schemas por módulo |
+| Ordenação | **Implementado (F30, ADR-052):** `?sort=<campo>&order=asc\|desc`, um campo, allowlist por endpoint; desempate por `id`. *(O formato multi-campo `name,-createdAt` nunca foi implementado.)* | `shared/listing.ts` |
+| Idempotência | **Não implementado.** `Idempotency-Key` continua uma proposta (ADR-049, só para marcações — não implementado). Hoje: transições de estado são atómicas (repetição → `409 INVALID_…_STATE`); criações não são idempotentes. | — |
+| Webhooks | Do UL Platform (ADR-057). O Na Pista **ainda não publica eventos**. Receptores: idempotentes por `x-ul-event-id`. Ver `docs/api/webhooks.md`. | Platform |
+| Health | `GET /v1/health` (sem dependências). *(`/v1/health/ready` nunca foi implementado.)* | `src/app.ts` |
+| Rate limit | **Não implementado no Na Pista** (proposta; o ficheiro `middleware/rateLimit.ts` não existe). | — |
 
-Contrato publicado: **OpenAPI 3** gerado/mantido no repositório do Na Pista e versionado com a API. É o que UI
+Contrato publicado (**implementado em F30, ADR-054**): **OpenAPI 3.1** gerado a partir dos schemas Zod — `docs/api/openapi.json` e `GET /v1/openapi.json`. É o que UI
 por defeito, UI personalizada e integradores consomem (ADR-008). Nada de imports de código entre projectos.
 
 ## 3. Resolução de tenant: organização no path (ADR-002)

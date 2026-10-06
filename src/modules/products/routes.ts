@@ -3,12 +3,14 @@ import { CATALOG_CAPABILITY_KEY, requireCapability } from "../../middleware/requ
 import { requireAuthorized } from "../../middleware/requireAuthorized.js";
 import { requireTenantContext } from "../../tenancy/tenantContext.js";
 import { actorFromRequest } from "../../tenancy/actor.js";
-import { paramString } from "../../shared/params.js";
-import { ok } from "../../shared/response.js";
+import { paramString, validateUuidParams } from "../../shared/params.js";
+import { ok, okPage } from "../../shared/response.js";
+import { parseBody, parseQuery } from "../../shared/validate.js";
 import { createProductSchema, listProductsQuerySchema, updateProductSchema } from "./schemas.js";
-import { archiveProduct, createProduct, getProductOrThrow, listAllProducts, updateProductOrThrow } from "./service.js";
+import { archiveProduct, createProduct, getProductOrThrow, listProductsPage, updateProductOrThrow } from "./service.js";
 
 export const productsRouter = Router();
+validateUuidParams(productsRouter);
 
 const GATE = [requireTenantContext(), requireCapability(CATALOG_CAPABILITY_KEY)] as const;
 
@@ -18,7 +20,7 @@ productsRouter.post(
   requireAuthorized("products.create", "catalog.write"),
   async (req, res, next) => {
     try {
-      const body = createProductSchema.parse(req.body);
+      const body = parseBody(createProductSchema, req.body);
       const product = await createProduct(req.tenant!, actorFromRequest(req), req.requestId, body);
       ok(res, product, 201);
     } catch (error) {
@@ -33,9 +35,8 @@ productsRouter.get(
   requireAuthorized("products.read", "catalog.read"),
   async (req, res, next) => {
     try {
-      const query = listProductsQuerySchema.parse(req.query);
-      const items = await listAllProducts(req.tenant!, query);
-      ok(res, items);
+      const query = parseQuery(listProductsQuerySchema, req.query);
+      okPage(res, await listProductsPage(req.tenant!, query));
     } catch (error) {
       next(error);
     }
@@ -62,7 +63,7 @@ productsRouter.patch(
   requireAuthorized("products.update", "catalog.write"),
   async (req, res, next) => {
     try {
-      const body = updateProductSchema.parse(req.body);
+      const body = parseBody(updateProductSchema, req.body);
       const product = await updateProductOrThrow(
         req.tenant!,
         actorFromRequest(req),

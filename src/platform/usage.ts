@@ -1,5 +1,5 @@
 import { callPlatform } from "./client.js";
-import { getServiceCredential } from "./serviceAuth.js";
+import { PlatformCredentialUnavailableError, resolvePlatformCredential } from "../modules/platformCredentials/resolver.js";
 import { logger } from "../shared/logger.js";
 
 /**
@@ -26,9 +26,19 @@ export async function recordUsage(
   metadata: Record<string, unknown>,
   requestId?: string,
 ): Promise<void> {
-  const credential = getServiceCredential(organizationId);
-  if (!credential) {
-    logger.warn("usage.write.skipped_no_credential", { organizationId, requestId });
+  // F29A: usage never breaks the business operation (ADR-023), so an
+  // unavailable credential skips the write — the resolver has already
+  // logged why (reason code only, never the secret).
+  let credential: string;
+  try {
+    credential = await resolvePlatformCredential(organizationId, { requestId });
+  } catch (error) {
+    // Never rethrow: usage must not break the operation, whatever went wrong.
+    logger.warn("usage.write.skipped_no_credential", {
+      organizationId,
+      requestId,
+      reason: error instanceof PlatformCredentialUnavailableError ? error.reason : "UNEXPECTED",
+    });
     return;
   }
 

@@ -1,6 +1,7 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, count, eq, type SQL, sql } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { orderItems, orders } from "../../db/schema/index.js";
+import { orderByAllowlisted } from "../../shared/listing.js";
 
 /** tenancy.md §3 layer 3: the only place with SQL for orders/order_items, requires a TenantContext. */
 export interface TenantContext {
@@ -46,20 +47,39 @@ export interface OrderFilters {
   status?: OrderStatus;
   customerId?: string;
   limit: number;
+  offset?: number;
+  sort?: OrderSort;
+  order?: "asc" | "desc";
+}
+
+/** ADR-052: public sort name -> column. The only columns a client can sort by. */
+export const ORDERS_SORT_COLUMNS = { createdAt: orders.createdAt, updatedAt: orders.updatedAt };
+export type OrderSort = keyof typeof ORDERS_SORT_COLUMNS;
+
+/** One WHERE for both the page and its count — `total` can never use a different tenant filter than the rows. */
+function ordersConditions(tenant: TenantContext, filters: Omit<OrderFilters, "limit">): SQL | undefined {
+  const conditions = [eq(orders.organizationId, tenant.organizationId)];
+  if (filters.status) conditions.push(eq(orders.status, filters.status));
+  if (filters.customerId) conditions.push(eq(orders.customerId, filters.customerId));
+  return and(...conditions);
 }
 
 export async function listOrders(tenant: TenantContext, filters: OrderFilters, executor: Executor = db): Promise<OrderRow[]> {
   assertTenant(tenant);
-  const conditions = [eq(orders.organizationId, tenant.organizationId)];
-  if (filters.status) conditions.push(eq(orders.status, filters.status));
-  if (filters.customerId) conditions.push(eq(orders.customerId, filters.customerId));
   const rows = await executor
     .select()
     .from(orders)
-    .where(and(...conditions))
-    .orderBy(desc(orders.createdAt))
-    .limit(filters.limit);
+    .where(ordersConditions(tenant, filters))
+    .orderBy(...orderByAllowlisted(ORDERS_SORT_COLUMNS, orders.id, filters.sort ?? "createdAt", filters.order ?? "desc"))
+    .limit(filters.limit)
+    .offset(filters.offset ?? 0);
   return rows as OrderRow[];
+}
+
+export async function countOrders(tenant: TenantContext, filters: Omit<OrderFilters, "limit">, executor: Executor = db): Promise<number> {
+  assertTenant(tenant);
+  const [row] = await executor.select({ total: count() }).from(orders).where(ordersConditions(tenant, filters));
+  return row?.total ?? 0;
 }
 
 /** Another organization's order id resolves to `undefined` — the service layer turns that into 404 (tenancy.md §3). */

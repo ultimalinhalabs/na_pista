@@ -16,6 +16,7 @@ import {
   ProductPriceRequiredError,
 } from "../../shared/errors.js";
 import {
+  countOrders,
   deleteOrderItem,
   getOrder,
   getOrderForUpdate,
@@ -32,6 +33,10 @@ import {
   type OrderRow,
   type TenantContext,
 } from "./repository.js";
+import { ORDERS_DEFAULT_PAGE_SIZE, type ListOrdersQuery } from "./schemas.js";
+import { pageRequest, type Page } from "../../shared/listing.js";
+
+type OrderItem = Awaited<ReturnType<typeof listOrders>>[number];
 
 export interface Actor {
   type: "user" | "service";
@@ -129,6 +134,17 @@ export async function createOrder(
 
 export async function listAllOrders(tenant: TenantContext, filters: OrderFilters) {
   return listOrders(tenant, filters);
+}
+
+/** ADR-051: one page + the tenant-scoped total for the same filters. */
+export async function listOrdersPage(tenant: TenantContext, query: ListOrdersQuery): Promise<Page<OrderItem>> {
+  const { page, pageSize, offset } = pageRequest(query, ORDERS_DEFAULT_PAGE_SIZE);
+  const { page: _p, pageSize: _s, limit: _l, ...filters } = query;
+  const [items, total] = await Promise.all([
+    listOrders(tenant, { ...filters, limit: pageSize, offset }),
+    countOrders(tenant, filters),
+  ]);
+  return { items, page, pageSize, total };
 }
 
 export async function getOrderOrThrow(tenant: TenantContext, id: string) {

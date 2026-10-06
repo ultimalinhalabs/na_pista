@@ -32,7 +32,8 @@ Inventory schema change was made for Orders.
 
 ## `GET /organizations/:organizationId/orders`
 - **Permission:** `orders.read` (all roles) · **Scope:** `catalog.read`.
-- **Query:** `status?: DRAFT|CONFIRMED|COMPLETED|CANCELED`, `customerId?: uuid`, `limit?: 1-100 (default 50)`.
+- **Query:** `status?: DRAFT|CONFIRMED|COMPLETED|CANCELED`, `customerId?: uuid`.
+- **Pagination & sorting (F30, ADR-051/052):** `page` (default 1), `pageSize` (default 50, max 100; `limit` = deprecated alias), `sort` ∈ {`createdAt`, `updatedAt`} + `order=asc|desc`. The response adds `pagination: { page, pageSize, total, totalPages }` beside `data` — see [pagination.md](pagination.md).
 - **Response `200`:** `Order[]` **without** `items` (a list-view summary, matching Products/Customers'
   list-view convention) — fetch the detail endpoint for items.
 

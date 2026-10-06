@@ -15,7 +15,8 @@ before(async () => {
 });
 after(async () => {
   await ctx.close();
-  await queryClient.end();
+  // Bounded: an untimed end() can take 70-90s on the remote pooler and blow the file's 90s budget (F30 report §15).
+  await queryClient.end({ timeout: 5 });
 });
 
 test("RECEIPT creates the balance, ADJUSTMENT_IN/OUT change it, GET reflects the current state, movements list the full history", async () => {

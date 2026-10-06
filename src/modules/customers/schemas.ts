@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { pageFields, pageSizeOrLimit, sortFields } from "../../shared/listing.js";
 
 /**
  * Phone: loose, international-friendly (F21 brief §8 — must work naturally
@@ -43,10 +44,14 @@ export const updateCustomerSchema = z
   .strict();
 
 /** No complex pagination (F20/F21 convention) — a hard, safe cap. `q` searches name/email/phone (F21 brief §6). */
+export const CUSTOMERS_DEFAULT_PAGE_SIZE = 50;
 export const listCustomersQuerySchema = z
   .object({
     status: z.enum(["ACTIVE", "ARCHIVED"]).optional(),
-    q: z.string().trim().min(1).max(200).optional(),
-    limit: z.coerce.number().int().positive().max(100).default(50),
+    q: z.string().trim().min(1).max(200).optional().meta({ description: "Case-insensitive substring of the customer's name, e-mail or phone." }),
+    ...pageFields(CUSTOMERS_DEFAULT_PAGE_SIZE, 100),
+    ...sortFields(["createdAt", "name"], "createdAt", "desc"),
   })
-  .strict();
+  .strict()
+  .refine(...pageSizeOrLimit);
+export type ListCustomersQuery = z.infer<typeof listCustomersQuerySchema>;

@@ -1,6 +1,7 @@
-import { and, desc, eq, ilike } from "drizzle-orm";
+import { and, count, eq, ilike, type SQL } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { products } from "../../db/schema/index.js";
+import { likeSubstring, orderByAllowlisted } from "../../shared/listing.js";
 
 /** tenancy.md §3 layer 3: the only place with SQL for products, requires a TenantContext. */
 export interface TenantContext {
@@ -40,20 +41,39 @@ export interface ProductFilters {
   categoryId?: string;
   q?: string;
   limit: number;
+  offset?: number;
+  sort?: ProductSort;
+  order?: "asc" | "desc";
+}
+
+/** ADR-052: public sort name -> column. The only columns a client can sort by. */
+export const PRODUCT_SORT_COLUMNS = { createdAt: products.createdAt, name: products.name };
+export type ProductSort = keyof typeof PRODUCT_SORT_COLUMNS;
+
+/** One WHERE for both the page and its count — `total` can never use a different tenant filter than the rows. */
+function productConditions(tenant: TenantContext, filters: Omit<ProductFilters, "limit">): SQL | undefined {
+  const conditions = [eq(products.organizationId, tenant.organizationId)];
+  if (filters.status) conditions.push(eq(products.status, filters.status));
+  if (filters.categoryId) conditions.push(eq(products.categoryId, filters.categoryId));
+  if (filters.q) conditions.push(ilike(products.name, likeSubstring(filters.q)));
+  return and(...conditions);
 }
 
 export async function listProducts(tenant: TenantContext, filters: ProductFilters, executor: Executor = db) {
   assertTenant(tenant);
-  const conditions = [eq(products.organizationId, tenant.organizationId)];
-  if (filters.status) conditions.push(eq(products.status, filters.status));
-  if (filters.categoryId) conditions.push(eq(products.categoryId, filters.categoryId));
-  if (filters.q) conditions.push(ilike(products.name, `%${filters.q}%`));
   return executor
     .select()
     .from(products)
-    .where(and(...conditions))
-    .orderBy(desc(products.createdAt))
-    .limit(filters.limit);
+    .where(productConditions(tenant, filters))
+    .orderBy(...orderByAllowlisted(PRODUCT_SORT_COLUMNS, products.id, filters.sort ?? "createdAt", filters.order ?? "desc"))
+    .limit(filters.limit)
+    .offset(filters.offset ?? 0);
+}
+
+export async function countProducts(tenant: TenantContext, filters: Omit<ProductFilters, "limit">, executor: Executor = db): Promise<number> {
+  assertTenant(tenant);
+  const [row] = await executor.select({ total: count() }).from(products).where(productConditions(tenant, filters));
+  return row?.total ?? 0;
 }
 
 /** Another organization's product id resolves to `undefined` — the route layer turns that into 404 (tenancy.md §3). */

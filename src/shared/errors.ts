@@ -1,9 +1,21 @@
+/**
+ * ADR-053: one entry per invalid field of the CLIENT's own input — where it
+ * was (`location`), which field (`path`, dotted) and why (`message`). Never a
+ * value, never schema internals.
+ */
+export interface ValidationIssue {
+  location?: "body" | "query" | "path";
+  path: string;
+  message: string;
+}
+
 /** Same envelope/codes convention as ul-platform and the F19 spike — api-boundary.md §2. */
 export class AppError extends Error {
   constructor(
     public readonly statusCode: number,
     public readonly code: string,
     message: string,
+    public readonly details?: ValidationIssue[],
   ) {
     super(message);
     this.name = "AppError";
@@ -11,8 +23,15 @@ export class AppError extends Error {
 }
 
 export class ValidationError extends AppError {
-  constructor(message = "Invalid request") {
-    super(400, "VALIDATION_ERROR", message);
+  constructor(message = "Invalid request", details?: ValidationIssue[]) {
+    super(400, "VALIDATION_ERROR", message, details);
+  }
+}
+
+/** ADR-053: a request body larger than the server accepts. */
+export class PayloadTooLargeError extends AppError {
+  constructor(message = "Request body too large") {
+    super(413, "PAYLOAD_TOO_LARGE", message);
   }
 }
 
@@ -55,6 +74,27 @@ export class LimitExceededError extends AppError {
 }
 
 /** The Platform (or Na Pista's own DB) could not be reached / did not answer in time. Fail closed, never silently allow. */
+/** Fase 6 — the UL Platform reports this user as disabled. Na Pista never decides this itself. */
+export class AccountDisabledError extends AppError {
+  constructor(message = "This account is disabled") {
+    super(403, "ACCOUNT_DISABLED", message);
+  }
+}
+
+/** Fase 6 — the UL Platform reports this organization as suspended. */
+export class OrganizationSuspendedError extends AppError {
+  constructor(message = "This organization is suspended") {
+    super(403, "ORGANIZATION_SUSPENDED", message);
+  }
+}
+
+/** Fase 6 — the organization has no active UL application access to NA_PISTA (only when enforcement is on). */
+export class ApplicationAccessRequiredError extends AppError {
+  constructor(message = "This organization has no access to Na Pista") {
+    super(403, "APPLICATION_ACCESS_REQUIRED", message);
+  }
+}
+
 export class UpstreamUnavailableError extends AppError {
   constructor(message = "A required upstream dependency is unavailable") {
     super(503, "UPSTREAM_UNAVAILABLE", message);
@@ -244,6 +284,11 @@ export function isExclusionViolationError(error: unknown, constraintName?: strin
 /** Postgres deadlock_detected (40P01) — see `modules/appointments/service.ts` `mapBookingWriteError` for the one place it is given domain meaning. */
 export function isDeadlockError(error: unknown): boolean {
   return extractErrorCode(error) === "40P01";
+}
+
+/** Postgres invalid_text_representation (22P02) — e.g. a malformed UUID reaching a query. Mapped to 400 as a backstop to boundary validation (ADR-053). */
+export function isInvalidTextRepresentationError(error: unknown): boolean {
+  return extractErrorCode(error) === "22P02";
 }
 
 export function isConnectionError(error: unknown): boolean {

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { pageFields, pageSizeOrLimit, sortFields } from "../../shared/listing.js";
 import { priceSchema } from "../products/schemas.js";
 
 /**
@@ -51,10 +52,14 @@ export const updateServiceSchema = z
   .strict();
 
 /** Same shape as Products'/Customers' list query — status filter, name search (ILIKE), a hard safe limit. */
+export const SERVICES_DEFAULT_PAGE_SIZE = 50;
 export const listServicesQuerySchema = z
   .object({
     status: z.enum(["ACTIVE", "ARCHIVED"]).optional(),
-    q: z.string().trim().min(1).max(200).optional(),
-    limit: z.coerce.number().int().positive().max(100).default(50),
+    q: z.string().trim().min(1).max(200).optional().meta({ description: "Case-insensitive substring of the service name." }),
+    ...pageFields(SERVICES_DEFAULT_PAGE_SIZE, 100),
+    ...sortFields(["createdAt", "name"], "createdAt", "desc"),
   })
-  .strict();
+  .strict()
+  .refine(...pageSizeOrLimit);
+export type ListServicesQuery = z.infer<typeof listServicesQuerySchema>;

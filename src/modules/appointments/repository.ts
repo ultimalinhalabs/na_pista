@@ -1,4 +1,4 @@
-import { and, asc, eq, gt, lt, ne, sql } from "drizzle-orm";
+import { and, asc, count, eq, gt, lt, ne, sql, type SQL } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { appointments } from "../../db/schema/index.js";
 import type { AppointmentStatus } from "./lifecycle.js";
@@ -80,11 +80,11 @@ export interface AppointmentFilters {
   serviceId?: string;
   status?: AppointmentStatus;
   limit: number;
+  offset?: number;
 }
 
-/** Always bounded: the window is mandatory (callers cap it at 31 local days) and `limit` is capped by the schema. Deterministic order `start_at, id`. */
-export async function listAppointments(tenant: TenantContext, filters: AppointmentFilters, executor: Executor = db): Promise<AppointmentRow[]> {
-  assertTenant(tenant);
+/** One WHERE for both the page and its count. */
+function appointmentConditions(tenant: TenantContext, filters: Omit<AppointmentFilters, "limit">): SQL | undefined {
   const conditions = [
     eq(appointments.organizationId, tenant.organizationId),
     lt(appointments.startAt, filters.windowEnd),
@@ -94,12 +94,25 @@ export async function listAppointments(tenant: TenantContext, filters: Appointme
   if (filters.customerId) conditions.push(eq(appointments.customerId, filters.customerId));
   if (filters.serviceId) conditions.push(eq(appointments.serviceId, filters.serviceId));
   if (filters.status) conditions.push(eq(appointments.status, filters.status));
+  return and(...conditions);
+}
+
+/** Always bounded: the window is mandatory (callers cap it at 31 local days) and `limit` is capped by the schema. Deterministic order `start_at, id`. */
+export async function listAppointments(tenant: TenantContext, filters: AppointmentFilters, executor: Executor = db): Promise<AppointmentRow[]> {
+  assertTenant(tenant);
   return executor
     .select()
     .from(appointments)
-    .where(and(...conditions))
+    .where(appointmentConditions(tenant, filters))
     .orderBy(asc(appointments.startAt), asc(appointments.id))
-    .limit(filters.limit);
+    .limit(filters.limit)
+    .offset(filters.offset ?? 0);
+}
+
+export async function countAppointments(tenant: TenantContext, filters: Omit<AppointmentFilters, "limit">, executor: Executor = db): Promise<number> {
+  assertTenant(tenant);
+  const [row] = await executor.select({ total: count() }).from(appointments).where(appointmentConditions(tenant, filters));
+  return row?.total ?? 0;
 }
 
 /**

@@ -23,13 +23,16 @@ import {
   getAppointment,
   getAppointmentForUpdate,
   insertAppointment,
+  countAppointments,
   listAppointments,
   listOccupyingForProfessional,
   updateAppointment,
   type AppointmentRow,
   type TenantContext,
 } from "./repository.js";
+import { APPOINTMENTS_DEFAULT_PAGE_SIZE, type ListAppointmentsQuery } from "./schemas.js";
 import { buildBookingSnapshot } from "./snapshot.js";
+import { pageRequest, type Page } from "../../shared/listing.js";
 import { localDateWindow, minutesBetween, toLocal } from "./time.js";
 
 export interface Actor {
@@ -206,23 +209,34 @@ export async function getAppointmentOrThrow(tenant: TenantContext, id: string) {
   return toAppointmentDto(row);
 }
 
-/** F27A §41: `from`/`to` are inclusive organization-local dates (the F26 query shape), converted server-side to one absolute window — the Console never does timezone math for queries. */
-export async function listAppointmentsOrThrow(
-  tenant: TenantContext,
-  query: { from: string; to: string; professionalId?: string; customerId?: string; serviceId?: string; status?: AppointmentStatus; limit: number },
-) {
+type AppointmentListQuery = { from: string; to: string; professionalId?: string; customerId?: string; serviceId?: string; status?: AppointmentStatus };
+
+async function appointmentFilters(tenant: TenantContext, query: AppointmentListQuery) {
   const timeZone = await getTimezoneOrThrow(tenant);
   const window = localDateWindow(query.from, query.to, timeZone);
-  const rows = await listAppointments(tenant, {
+  return {
     windowStart: window.start,
     windowEnd: window.end,
     professionalId: query.professionalId,
     customerId: query.customerId,
     serviceId: query.serviceId,
     status: query.status,
-    limit: query.limit,
-  });
+  };
+}
+
+/** F27A §41: `from`/`to` are inclusive organization-local dates (the F26 query shape), converted server-side to one absolute window — the Console never does timezone math for queries. */
+export async function listAppointmentsOrThrow(tenant: TenantContext, query: AppointmentListQuery & { limit: number; offset?: number }) {
+  const filters = await appointmentFilters(tenant, query);
+  const rows = await listAppointments(tenant, { ...filters, limit: query.limit, offset: query.offset });
   return rows.map(toAppointmentDto);
+}
+
+/** ADR-051: one page + the tenant-scoped total for the same window and filters. */
+export async function listAppointmentsPage(tenant: TenantContext, query: ListAppointmentsQuery): Promise<Page<ReturnType<typeof toAppointmentDto>>> {
+  const { page, pageSize, offset } = pageRequest(query, APPOINTMENTS_DEFAULT_PAGE_SIZE);
+  const filters = await appointmentFilters(tenant, query);
+  const [rows, total] = await Promise.all([listAppointments(tenant, { ...filters, limit: pageSize, offset }), countAppointments(tenant, filters)]);
+  return { items: rows.map(toAppointmentDto), page, pageSize, total };
 }
 
 /**

@@ -1,6 +1,7 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, count, eq, type SQL } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { categories } from "../../db/schema/index.js";
+import { orderByAllowlisted } from "../../shared/listing.js";
 
 /**
  * tenancy.md §3 layer 3, executed: the only place with SQL for
@@ -33,20 +34,41 @@ export async function insertCategory(
   return row!;
 }
 
-export async function listCategories(
-  tenant: TenantContext,
-  filters: { status?: "ACTIVE" | "ARCHIVED"; limit: number },
-  executor: Executor = db,
-) {
-  assertTenant(tenant);
+export interface CategoryFilters {
+  status?: "ACTIVE" | "ARCHIVED";
+  limit: number;
+  offset?: number;
+  sort?: CategorySort;
+  order?: "asc" | "desc";
+}
+
+/** ADR-052: public sort name -> column. The only columns a client can sort by. */
+export const CATEGORIES_SORT_COLUMNS = { createdAt: categories.createdAt, name: categories.name };
+export type CategorySort = keyof typeof CATEGORIES_SORT_COLUMNS;
+
+/** One WHERE for both the page and its count — `total` can never use a different tenant filter than the rows. */
+function categoriesConditions(tenant: TenantContext, filters: Omit<CategoryFilters, "limit">): SQL | undefined {
   const conditions = [eq(categories.organizationId, tenant.organizationId)];
   if (filters.status) conditions.push(eq(categories.status, filters.status));
-  return executor
+  return and(...conditions);
+}
+
+export async function listCategories(tenant: TenantContext, filters: CategoryFilters, executor: Executor = db) {
+  assertTenant(tenant);
+  const rows = await executor
     .select()
     .from(categories)
-    .where(and(...conditions))
-    .orderBy(desc(categories.createdAt))
-    .limit(filters.limit);
+    .where(categoriesConditions(tenant, filters))
+    .orderBy(...orderByAllowlisted(CATEGORIES_SORT_COLUMNS, categories.id, filters.sort ?? "createdAt", filters.order ?? "desc"))
+    .limit(filters.limit)
+    .offset(filters.offset ?? 0);
+  return rows;
+}
+
+export async function countCategories(tenant: TenantContext, filters: Omit<CategoryFilters, "limit">, executor: Executor = db): Promise<number> {
+  assertTenant(tenant);
+  const [row] = await executor.select({ total: count() }).from(categories).where(categoriesConditions(tenant, filters));
+  return row?.total ?? 0;
 }
 
 /** Another organization's category id resolves to `undefined` — the route layer turns that into 404. */
