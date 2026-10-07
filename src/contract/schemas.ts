@@ -52,6 +52,7 @@ export const PaginationSchema = z
 
 export const RemovedSchema = z.strictObject({ removed: z.literal(true) }).meta({ id: "Removed" });
 export const HealthSchema = z.strictObject({ status: z.literal("ok") }).meta({ id: "Health" });
+export const ReadinessSchema = z.strictObject({ status: z.literal("ready") }).meta({ id: "Readiness" });
 export const OpenApiDocumentSchema = z
   .looseObject({ openapi: z.string(), info: z.looseObject({}), paths: z.looseObject({}) })
   .meta({ id: "OpenApiDocument", description: "This document (OpenAPI 3.1)." });

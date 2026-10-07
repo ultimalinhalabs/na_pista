@@ -32,6 +32,7 @@ import {
   CategorySchema,
   CustomerSchema,
   HealthSchema,
+  ReadinessSchema,
   OpenApiDocumentSchema,
   InventoryBalanceSchema,
   OrderDetailSchema,
@@ -106,6 +107,15 @@ export const operations: Operation[] = [
     summary: "Liveness check",
     auth: "public",
     success: { status: 200, kind: "data", schema: HealthSchema },
+  },
+  {
+    method: "get",
+    path: "/health/ready",
+    tag: "Platform",
+    summary: "Readiness check",
+    description: "Public. 200 when the service can serve traffic (its database answers); 503 NOT_READY otherwise. Never returns dependency details.",
+    auth: "public",
+    success: { status: 200, kind: "data", schema: ReadinessSchema },
   },
   {
     method: "get",

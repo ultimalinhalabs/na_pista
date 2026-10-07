@@ -1,8 +1,22 @@
 import "dotenv/config";
 import { defineConfig } from "drizzle-kit";
+import { isLocalHostname } from "./src/db/testDatabaseGuard.js";
 
 if (!process.env.NA_PISTA_DATABASE_URL) {
   throw new Error("NA_PISTA_DATABASE_URL is required to run drizzle-kit");
+}
+
+// drizzle-kit (generate/migrate/studio/push) is a LOCAL development tool: it reads `.env` and must never
+// reach the production database. Production migrations go through the audited, owner-authorized
+// procedure (exact committed blobs, dry-run of the pending set) — never through drizzle-kit. Fail closed.
+let drizzleKitHost = "";
+try {
+  drizzleKitHost = new URL(process.env.NA_PISTA_DATABASE_URL).hostname;
+} catch {
+  throw new Error("NA_PISTA_DATABASE_URL is not a valid connection URL");
+}
+if (!isLocalHostname(drizzleKitHost)) {
+  throw new Error("drizzle-kit only runs against a local (loopback) database — refusing a remote NA_PISTA_DATABASE_URL");
 }
 
 /**

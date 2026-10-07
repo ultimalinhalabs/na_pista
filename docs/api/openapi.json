@@ -85,6 +85,37 @@
         }
       }
     },
+    "/health/ready": {
+      "get": {
+        "operationId": "getHealthReady",
+        "tags": [
+          "Platform"
+        ],
+        "summary": "Readiness check",
+        "description": "Public. 200 when the service can serve traffic (its database answers); 503 NOT_READY otherwise. Never returns dependency details.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Readiness"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/openapi.json": {
       "get": {
         "operationId": "getOpenapi.json",
@@ -9709,6 +9740,18 @@
           "professionalId",
           "serviceId",
           "createdAt"
+        ]
+      },
+      "Readiness": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ready"
+          }
+        },
+        "required": [
+          "status"
         ]
       },
       "Removed": {

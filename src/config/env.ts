@@ -1,5 +1,7 @@
 import "dotenv/config";
 import { z } from "zod";
+import { isLocalHostname, isTestRun } from "../db/testDatabaseGuard.js";
+import { DEVELOPMENT_DEFAULT_ORIGINS, parseAllowedOrigins } from "./origins.js";
 
 /**
  * F29A: key for Platform credentials at rest (AES-256-GCM, base64 of exactly
@@ -27,7 +29,11 @@ const schema = z
     PLATFORM_API_URL: z.string().url(),
     NA_PISTA_DATABASE_URL: z.string().min(1),
     NA_PISTA_DB_SCHEMA: z.string().min(1).default("na_pista"),
-    NA_PISTA_ALLOWED_ORIGINS: z.string().min(1).default("http://localhost:3010"),
+    /**
+     * Browser origins allowed by CORS (comma-separated exact origins). REQUIRED in production (no
+     * default, https only, never "*"); development/test fall back to the local Default UI.
+     */
+    NA_PISTA_ALLOWED_ORIGINS: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
     NA_PISTA_CREDENTIAL_ENCRYPTION_KEY: credentialKey,
     /**
      * Fase 6 (UL Platform): when "true", a human caller also needs the organization's UL
@@ -55,6 +61,30 @@ const schema = z
         message: "is required in production (Platform credentials are stored encrypted)",
       });
     }
+    // CORS: an explicit, valid allow-list in production; the local default only outside production.
+    if (value.NODE_ENV === "production" && !value.NA_PISTA_ALLOWED_ORIGINS) {
+      ctx.addIssue({ code: "custom", path: ["NA_PISTA_ALLOWED_ORIGINS"], message: "is required in production (no default origin)" });
+    } else {
+      const { problems } = parseAllowedOrigins(value.NA_PISTA_ALLOWED_ORIGINS ?? DEVELOPMENT_DEFAULT_ORIGINS, value.NODE_ENV);
+      for (const problem of problems) ctx.addIssue({ code: "custom", path: ["NA_PISTA_ALLOWED_ORIGINS"], message: problem });
+    }
+    // Database separation: outside production the runtime only ever talks to a LOCAL database. (Under
+    // the test runner the stricter test-database guard in db/index.ts applies.) Fail closed, no override.
+    if (value.NODE_ENV !== "production" && !isTestRun()) {
+      let host: string | undefined;
+      try {
+        host = new URL(value.NA_PISTA_DATABASE_URL).hostname;
+      } catch {
+        host = undefined;
+      }
+      if (!host || !isLocalHostname(host)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["NA_PISTA_DATABASE_URL"],
+          message: "must be a local (loopback) database outside production — the production database is only configured in the deployment",
+        });
+      }
+    }
   });
 
 const parsed = schema.safeParse(process.env);
@@ -66,7 +96,5 @@ if (!parsed.success) {
 
 export const env = {
   ...parsed.data,
-  NA_PISTA_ALLOWED_ORIGINS: parsed.data.NA_PISTA_ALLOWED_ORIGINS.split(",")
-    .map((o) => o.trim())
-    .filter(Boolean),
+  NA_PISTA_ALLOWED_ORIGINS: parseAllowedOrigins(parsed.data.NA_PISTA_ALLOWED_ORIGINS ?? DEVELOPMENT_DEFAULT_ORIGINS, parsed.data.NODE_ENV).origins,
 };

@@ -218,19 +218,37 @@ NA PISTA    → "O que pode fazer?" (produtos, stock, pedidos, clientes | servi�
 
 ```bash
 npm install
-cp .env.example .env        # NA_PISTA_DATABASE_URL, PLATFORM_API_URL, ...
+cp .env.example .env        # NA_PISTA_DATABASE_URL (LOCAL), PLATFORM_API_URL, ...
 npm run db:generate         # já gerado; só necessário após mudar src/db/schema/
-npm run db:migrate
+npm run db:migrate          # só BD local (drizzle-kit recusa BD remota)
 npm run dev                 # API em :4200
 
-# testes (precisam de um UL Platform real já a correr em :4000)
+# testes (precisam de um UL Platform local já a correr em :4000)
 npm run test:unit
-npm run test:integration    # precisa de NA_PISTA_DATABASE_URL real
+npm run test:integration    # BD local/descartável — os testes recusam qualquer BD remota
 cd ../ul-platform && npm run f20:provision && npm run f21:provision && npm run f22:provision && npm run f23:provision && npm run f24:provision && npm run f25:provision && npm run f26:provision   # fixtures reais
 cd ../na-pista && npm run test:e2e
 ```
 
 UI: ver [`../na-pista-console`](../na-pista-console).
+
+## Runtime de produção (preparação — ainda sem deploy)
+
+- **Local ≠ produção.** Fora de `NODE_ENV=production`, o servidor, os testes e o `drizzle-kit` só aceitam uma BD
+  local (loopback); sem exceções. A BD de produção só existe nos secrets do deployment. As migrations de produção
+  seguem o procedimento auditado (blobs commitados, dry-run do conjunto pendente), nunca o `drizzle-kit`.
+- **Build / start:** `npm run build` → `dist/src/server.js`; `npm start`. Processo **persistente** (o reconciliador
+  D2-B corre dentro do processo web); uma réplica.
+- **Health:** `GET /v1/health` (processo vivo) e `GET /v1/health/ready` (BD responde; 200 / 503 `NOT_READY`, sem
+  detalhes). A readiness não depende da UL Platform nem do provisioner.
+- **Secrets do deployment** (nunca em ficheiros, logs ou no repositório):
+  - `NA_PISTA_DATABASE_URL` — BD de produção (session pooler, porta 5432; o cliente usa prepared statements);
+  - `NA_PISTA_CREDENTIAL_ENCRYPTION_KEY` — chave F29A **exclusiva de produção**, criada para o primeiro deployment;
+    nunca a chave de desenvolvimento nem uma que tenha cifrado dados de teste;
+  - `NA_PISTA_PROVISIONING_CREDENTIAL` — credencial PROVISIONER da UL Platform (opcional: sem ela o servidor
+    arranca e não há provisioning).
+- **Configuração obrigatória:** `NODE_ENV=production`, `PLATFORM_API_URL`, `NA_PISTA_ALLOWED_ORIGINS` (origens
+  https exatas; sem valor por omissão — a origem de produção ainda não está decidida).
 
 ## Fora de âmbito (F18)
 CRUDs, migrations definitivas, billing, pagamentos, integração com Micha Express, deploys, UI de cliente, app móvel,

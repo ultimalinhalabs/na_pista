@@ -4,6 +4,7 @@ import helmet from "helmet";
 import { env } from "./config/env.js";
 import { openApiDocument } from "./contract/openapi.js";
 import { authenticate } from "./middleware/authenticate.js";
+import { readinessHandler } from "./health/readiness.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import { appointmentsRouter } from "./modules/appointments/routes.js";
 import { auditRouter } from "./modules/audit/routes.js";
@@ -35,6 +36,8 @@ export function buildApp() {
   app.use(express.json());
 
   app.get("/v1/health", (_req, res) => ok(res, { status: "ok" }));
+  // Readiness: the process can serve traffic (its database answers). Unauthenticated, no details.
+  app.get("/v1/health/ready", readinessHandler());
   // ADR-054: the public contract — unauthenticated, contains no secret or internal detail.
   app.get("/v1/openapi.json", (_req, res) => {
     res.json(openApiDocument());
