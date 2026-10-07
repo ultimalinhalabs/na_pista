@@ -1,5 +1,6 @@
 import { callPlatform } from "./client.js";
 import { resolvePlatformCredential } from "../modules/platformCredentials/resolver.js";
+import { retireLocalCredentialIfRevoked } from "../modules/platformCredentials/rejection.js";
 import { UpstreamUnavailableError } from "../shared/errors.js";
 
 /**
@@ -90,6 +91,8 @@ export async function fetchEntitlements(organizationId: string, requestId?: stri
   );
 
   if (res.status !== 200 || !res.data) {
+    // D2-B — fail closed; additionally retire the local copy when the Platform says the credential is revoked.
+    await retireLocalCredentialIfRevoked(organizationId, credential, res, requestId);
     throw new UpstreamUnavailableError(`Could not resolve entitlements for organization ${organizationId}`);
   }
 

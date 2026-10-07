@@ -78,6 +78,13 @@
       "when": 1790789156810,
       "tag": "0010_platform_credentials",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791393831898,
+      "tag": "0011_managed_credential_pending",
+      "breakpoints": true
     }
   ]
 }

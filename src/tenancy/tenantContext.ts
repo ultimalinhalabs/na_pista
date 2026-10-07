@@ -19,6 +19,14 @@ import { paramString } from "../shared/params.js";
  *    introspection) matches the path exactly.
  * Anything else is 403 — never a silent fallback.
  */
+/**
+ * D2-B — commercially authorized access is never optional in production: the variable can only relax
+ * the check for local/test harnesses (NODE_ENV development/test), never for a real deployment.
+ */
+export function requiresApplicationAccess(nodeEnv: string = env.NODE_ENV, flag: string = env.NA_PISTA_REQUIRE_UL_APPLICATION_ACCESS): boolean {
+  return nodeEnv === "production" || flag === "true";
+}
+
 export function requireTenantContext(paramName = "organizationId") {
   return (req: Request, _res: Response, next: NextFunction) => {
     const organizationId = paramString(req.params[paramName]);
@@ -37,7 +45,7 @@ export function requireTenantContext(paramName = "organizationId") {
       if (!membership) return next(new ForbiddenError("No active membership in this organization"));
       // Fase 6 — UL statuses, read from the Platform (never a local authority).
       if (isOrganizationSuspended(membership)) return next(new OrganizationSuspendedError());
-      if (env.NA_PISTA_REQUIRE_UL_APPLICATION_ACCESS === "true" && !hasNaPistaApplicationAccess(membership)) {
+      if (requiresApplicationAccess() && !hasNaPistaApplicationAccess(membership)) {
         return next(new ApplicationAccessRequiredError());
       }
       req.tenant = {

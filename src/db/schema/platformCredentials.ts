@@ -35,8 +35,12 @@ export const organizationPlatformCredentials = naPistaSchema.table(
     organizationId: uuid("organization_id").notNull(),
     platformApiKeyId: uuid("platform_api_key_id").notNull(),
     encryptedCredential: text("encrypted_credential").notNull(),
-    status: text("status", { enum: ["ACTIVE", "REVOKED"] }).notNull().default("ACTIVE"),
+    // D2-B — PENDING: a managed credential received from the Platform and stored (encrypted) BEFORE its
+    // possession is confirmed there. The resolver never uses a PENDING row.
+    status: text("status", { enum: ["PENDING", "ACTIVE", "REVOKED"] }).notNull().default("ACTIVE"),
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    /** D2-B — the Platform provisioning request that issued this credential (null for credentials provisioned by hand, F29A). */
+    provisioningRequestId: uuid("provisioning_request_id"),
     ...timestamps,
   },
   (table) => [
@@ -45,9 +49,14 @@ export const organizationPlatformCredentials = naPistaSchema.table(
     uniqueIndex("org_platform_credentials_one_active_per_org")
       .on(table.organizationId)
       .where(sql`${table.status} = 'ACTIVE'`),
+    // D2-B — and at most one PENDING (a re-key keeps the ACTIVE one serving while the new one is confirmed).
+    uniqueIndex("org_platform_credentials_one_pending_per_org")
+      .on(table.organizationId)
+      .where(sql`${table.status} = 'PENDING'`),
     uniqueIndex("org_platform_credentials_platform_api_key_id_unique").on(table.platformApiKeyId),
     index("org_platform_credentials_org_created_idx").on(table.organizationId, table.createdAt),
-    check("org_platform_credentials_status_valid", sql`${table.status} IN ('ACTIVE', 'REVOKED')`),
+    check("org_platform_credentials_status_valid", sql`${table.status} IN ('PENDING', 'ACTIVE', 'REVOKED')`),
+    check("org_platform_credentials_pending_has_request", sql`${table.status} <> 'PENDING' OR ${table.provisioningRequestId} IS NOT NULL`),
     check("org_platform_credentials_revoked_at_matches_status", sql`(${table.status} = 'REVOKED') = (${table.revokedAt} IS NOT NULL)`),
     check("org_platform_credentials_envelope_versioned", sql`${table.encryptedCredential} LIKE 'v1:%'`),
   ],

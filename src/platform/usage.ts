@@ -1,5 +1,6 @@
 import { callPlatform } from "./client.js";
 import { PlatformCredentialUnavailableError, resolvePlatformCredential } from "../modules/platformCredentials/resolver.js";
+import { retireLocalCredentialIfRevoked } from "../modules/platformCredentials/rejection.js";
 import { logger } from "../shared/logger.js";
 
 /**
@@ -50,6 +51,7 @@ export async function recordUsage(
     });
     if (res.status !== 200 && res.status !== 201) {
       logger.warn("usage.write.failed", { organizationId, requestId, status: res.status, errorCode: res.error?.code });
+      await retireLocalCredentialIfRevoked(organizationId, credential, res, requestId);
     }
   } catch (error) {
     // Fail open for usage specifically (ADR-017: telemetry/analytics MAY
