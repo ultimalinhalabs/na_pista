@@ -31,11 +31,21 @@ const schema = z
     NA_PISTA_CREDENTIAL_ENCRYPTION_KEY: credentialKey,
     /**
      * Fase 6 (UL Platform): when "true", a human caller also needs the organization's UL
-     * application access to NA_PISTA (GET /v1/me → memberships[].applications). Off by default:
-     * existing organizations have no explicit access rows yet; turn on only after the access
-     * backfill is authorized and applied.
+     * application access to NA_PISTA (GET /v1/me → memberships[].applications).
+     * D2-B: in production the check is ALWAYS enforced (tenancy/tenantContext.ts) — this variable
+     * can only relax it for local/test harnesses, never for a real deployment.
      */
     NA_PISTA_REQUIRE_UL_APPLICATION_ACCESS: z.enum(["true", "false"]).default("false"),
+    /**
+     * D2-B: the Platform PROVISIONER credential (PLATFORM_SERVICE, purpose PROVISIONER, scope
+     * `credential.provision`) the reconciler uses to pull managed credentials. Unset → no reconciler.
+     * A deployment secret: never in a file, a log or the repository.
+     */
+    NA_PISTA_PROVISIONING_CREDENTIAL: z.preprocess(
+      (v) => (v === "" ? undefined : v),
+      z.string().startsWith("ulk_").optional(),
+    ),
+    NA_PISTA_RECONCILE_INTERVAL_MS: z.coerce.number().int().min(1_000).default(30_000),
   })
   .superRefine((value, ctx) => {
     if (value.NODE_ENV === "production" && !value.NA_PISTA_CREDENTIAL_ENCRYPTION_KEY) {

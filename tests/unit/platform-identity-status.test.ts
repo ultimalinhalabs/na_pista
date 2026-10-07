@@ -156,7 +156,7 @@ test("identity cache: 15 s — one Platform call inside the window; a revocation
 });
 
 test("service-to-service: valid key resolves; a key of a suspended organization → ORGANIZATION_SUSPENDED; scoped to its own organization", async () => {
-  responses.set("svc:ulk_ok", { status: 200, body: { data: { apiKeyId: "k1", application: "QUALE_A_DICA", organizationId: ORG_A, scopes: ["catalog.read"] } } });
+  responses.set("svc:ulk_ok", { status: 200, body: { data: { apiKeyId: "k1", application: "QUALE_A_DICA", organizationId: ORG_A, scopes: ["catalog.read"], credentialClass: "ORGANIZATION" } } });
   responses.set("svc:ulk_susp", { status: 403, body: { error: { code: "ORGANIZATION_SUSPENDED", message: "suspended" } } });
   svc._clearServiceIdentityCache();
   const identity = await svc.introspectServiceCredential("ulk_ok");

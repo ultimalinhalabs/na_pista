@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray, ne } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { organizationPlatformCredentials, type OrganizationPlatformCredentialRow } from "../../db/schema/index.js";
 
@@ -25,13 +25,88 @@ export async function findCurrentCredential(
     .limit(1);
   if (active) return active;
 
+  // D2-B — a PENDING row (received, possession not yet confirmed) never decides the runtime state.
   const [latest] = await executor
     .select()
     .from(organizationPlatformCredentials)
-    .where(eq(organizationPlatformCredentials.organizationId, organizationId))
+    .where(and(eq(organizationPlatformCredentials.organizationId, organizationId), ne(organizationPlatformCredentials.status, "PENDING")))
     .orderBy(desc(organizationPlatformCredentials.createdAt))
     .limit(1);
   return latest;
+}
+
+/** D2-B — every PENDING row (all organizations): the reconciler confirms these before asking for anything new. */
+export async function listPendingCredentials(executor: Executor = db): Promise<OrganizationPlatformCredentialRow[]> {
+  return executor.select().from(organizationPlatformCredentials).where(eq(organizationPlatformCredentials.status, "PENDING"));
+}
+
+/** D2-B — the organization's row(s) for one Platform provisioning request. */
+export async function findByProvisioningRequest(
+  organizationId: string,
+  provisioningRequestId: string,
+  executor: Executor = db,
+): Promise<OrganizationPlatformCredentialRow[]> {
+  return executor
+    .select()
+    .from(organizationPlatformCredentials)
+    .where(
+      and(
+        eq(organizationPlatformCredentials.organizationId, organizationId),
+        eq(organizationPlatformCredentials.provisioningRequestId, provisioningRequestId),
+      ),
+    );
+}
+
+export async function insertPendingCredential(
+  values: { organizationId: string; platformApiKeyId: string; encryptedCredential: string; provisioningRequestId: string },
+  executor: Executor = db,
+): Promise<OrganizationPlatformCredentialRow> {
+  const [row] = await executor
+    .insert(organizationPlatformCredentials)
+    .values({ ...values, status: "PENDING" })
+    .returning();
+  return row!;
+}
+
+/** D2-B — PENDING → ACTIVE for this organization's row of this exact Platform key. */
+export async function activatePendingCredential(
+  organizationId: string,
+  platformApiKeyId: string,
+  executor: Executor = db,
+): Promise<OrganizationPlatformCredentialRow | undefined> {
+  const [row] = await executor
+    .update(organizationPlatformCredentials)
+    .set({ status: "ACTIVE", updatedAt: new Date() })
+    .where(
+      and(
+        eq(organizationPlatformCredentials.organizationId, organizationId),
+        eq(organizationPlatformCredentials.platformApiKeyId, platformApiKeyId),
+        eq(organizationPlatformCredentials.status, "PENDING"),
+      ),
+    )
+    .returning();
+  return row;
+}
+
+/** D2-B — PENDING|ACTIVE → REVOKED for this organization's row of this exact Platform key (never reactivated). */
+export async function revokeCredentialByPlatformKey(
+  organizationId: string,
+  platformApiKeyId: string,
+  executor: Executor = db,
+): Promise<OrganizationPlatformCredentialRow | undefined> {
+  const now = new Date();
+  const [row] = await executor
+    .update(organizationPlatformCredentials)
+    .set({ status: "REVOKED", revokedAt: now, updatedAt: now })
+    .where(
+      and(
+        eq(organizationPlatformCredentials.organizationId, organizationId),
+        eq(organizationPlatformCredentials.platformApiKeyId, platformApiKeyId),
+        inArray(organizationPlatformCredentials.status, ["PENDING", "ACTIVE"]),
+      ),
+    )
+    .returning();
+  return row;
 }
 
 /** Any row (any status) of this organization backed by this Platform key. */
@@ -88,6 +163,7 @@ export interface PlatformCredentialStatus {
 }
 
 export function toStatus(row: OrganizationPlatformCredentialRow | undefined): PlatformCredentialStatus {
-  if (!row) return { configured: false, status: null, createdAt: null, updatedAt: null, revokedAt: null };
+  // D2-B — a PENDING row is not (yet) a configured credential: the public status contract stays ACTIVE | REVOKED | null.
+  if (!row || row.status === "PENDING") return { configured: false, status: null, createdAt: null, updatedAt: null, revokedAt: null };
   return { configured: true, status: row.status, createdAt: row.createdAt, updatedAt: row.updatedAt, revokedAt: row.revokedAt };
 }

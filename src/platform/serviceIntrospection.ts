@@ -13,7 +13,16 @@ export interface ServiceIdentity {
   application: string;
   organizationId: string | null;
   scopes: string[];
+  /** D2-B — the credential's structural class, as stated by the Platform. */
+  credentialClass?: string;
 }
+
+/**
+ * D2-B — classes that may call Na Pista INBOUND. An INTEGRATION_MANAGED credential is the one Na Pista
+ * itself holds to call the Platform: it is never accepted as a caller of Na Pista (nor is a PENDING one,
+ * which only exists in that class). An identity without a class is refused (fail closed).
+ */
+const INBOUND_CLASSES = new Set(["ORGANIZATION", "PLATFORM_SERVICE"]);
 
 interface CacheEntry {
   value: ServiceIdentity;
@@ -40,6 +49,9 @@ export async function introspectServiceCredential(credential: string, requestId?
   }
 
   const identity = res.data;
+  if (!identity.credentialClass || !INBOUND_CLASSES.has(identity.credentialClass)) {
+    throw new UnauthorizedError("Invalid, revoked or expired service credential");
+  }
   cache.set(credential, { value: identity, expiresAt: Date.now() + TTL_MS });
   return identity;
 }

@@ -1,0 +1,5 @@
+ALTER TABLE "na_pista"."organization_platform_credentials" DROP CONSTRAINT "org_platform_credentials_status_valid";--> statement-breakpoint
+ALTER TABLE "na_pista"."organization_platform_credentials" ADD COLUMN "provisioning_request_id" uuid;--> statement-breakpoint
+CREATE UNIQUE INDEX "org_platform_credentials_one_pending_per_org" ON "na_pista"."organization_platform_credentials" USING btree ("organization_id") WHERE "na_pista"."organization_platform_credentials"."status" = 'PENDING';--> statement-breakpoint
+ALTER TABLE "na_pista"."organization_platform_credentials" ADD CONSTRAINT "org_platform_credentials_pending_has_request" CHECK ("na_pista"."organization_platform_credentials"."status" <> 'PENDING' OR "na_pista"."organization_platform_credentials"."provisioning_request_id" IS NOT NULL);--> statement-breakpoint
+ALTER TABLE "na_pista"."organization_platform_credentials" ADD CONSTRAINT "org_platform_credentials_status_valid" CHECK ("na_pista"."organization_platform_credentials"."status" IN ('PENDING', 'ACTIVE', 'REVOKED'));
