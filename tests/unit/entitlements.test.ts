@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { interpretCapability, readLimit, type RawEntitlementsResponse } from "../../src/platform/entitlements.js";
+import { entitlementsRefusal, interpretCapability, readLimit, type RawEntitlementsResponse } from "../../src/platform/entitlements.js";
 
 const app = { application: { key: "NA_PISTA", name: "Na Pista" } };
 function resp(entitlements: { key: string; value: unknown }[], subscription: RawEntitlementsResponse["subscription"] = { id: "sub_1", status: "active", planKey: "BUSINESS" }): RawEntitlementsResponse {
@@ -49,4 +49,15 @@ test("readLimit: numeric value usable", () => {
   const l = readLimit(resp([{ key: "products.max", value: 1000 }]), "products.max");
   assert.equal(l.hasLimit, true);
   assert.equal(l.max, 1000);
+});
+
+test("entitlementsRefusal: no current commercial authority in UL is 403 ENTITLEMENT_REQUIRED; anything else stays a 503", () => {
+  for (const code of ["CREDENTIAL_NOT_AUTHORIZED", "APPLICATION_ACCESS_REQUIRED"]) {
+    const e = entitlementsRefusal({ status: 403, error: { code, message: "x" } }, "org-1") as { statusCode?: number; code?: string };
+    assert.equal(e.code, "ENTITLEMENT_REQUIRED", code);
+    assert.equal(e.statusCode, 403);
+  }
+  for (const res of [{ status: 403, error: { code: "FORBIDDEN", message: "x" } }, { status: 500 }, { status: 401, error: { code: "CREDENTIAL_REVOKED", message: "x" } }, { status: 404 }]) {
+    assert.equal((entitlementsRefusal(res, "org-1") as { code?: string }).code, "UPSTREAM_UNAVAILABLE", JSON.stringify(res));
+  }
 });

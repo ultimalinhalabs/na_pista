@@ -1,7 +1,8 @@
 import { callPlatform } from "./client.js";
 import { resolvePlatformCredential } from "../modules/platformCredentials/resolver.js";
 import { retireLocalCredentialIfRevoked } from "../modules/platformCredentials/rejection.js";
-import { UpstreamUnavailableError } from "../shared/errors.js";
+import { EntitlementRequiredError, UpstreamUnavailableError } from "../shared/errors.js";
+import type { PlatformResponse } from "./client.js";
 
 /**
  * ADR-014/ADR-022: Na Pista consumes the Platform's Effective Entitlements
@@ -76,6 +77,19 @@ export function _clearEntitlementsCache() {
   cache.clear();
 }
 
+/**
+ * A non-200 answer to the entitlements read, as an error. UL Platform refuses the organization's credential with
+ * 403 when the organization has NO current commercial authority for Na Pista (CREDENTIAL_NOT_AUTHORIZED — e.g. the
+ * contract expired or was terminated — or APPLICATION_ACCESS_REQUIRED): that is "the subscription does not include
+ * this module" (403 ENTITLEMENT_REQUIRED), not an outage. Anything else stays a fail-closed 503.
+ */
+export function entitlementsRefusal(res: Pick<PlatformResponse<unknown>, "status" | "error">, organizationId: string): Error {
+  if (res.status === 403 && (res.error?.code === "CREDENTIAL_NOT_AUTHORIZED" || res.error?.code === "APPLICATION_ACCESS_REQUIRED")) {
+    return new EntitlementRequiredError("The organization has no active subscription to Na Pista");
+  }
+  return new UpstreamUnavailableError(`Could not resolve entitlements for organization ${organizationId}`);
+}
+
 export async function fetchEntitlements(organizationId: string, requestId?: string): Promise<RawEntitlementsResponse> {
   const cached = cache.get(organizationId);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
@@ -93,7 +107,7 @@ export async function fetchEntitlements(organizationId: string, requestId?: stri
   if (res.status !== 200 || !res.data) {
     // D2-B — fail closed; additionally retire the local copy when the Platform says the credential is revoked.
     await retireLocalCredentialIfRevoked(organizationId, credential, res, requestId);
-    throw new UpstreamUnavailableError(`Could not resolve entitlements for organization ${organizationId}`);
+    throw entitlementsRefusal(res, organizationId);
   }
 
   cache.set(organizationId, { value: res.data, expiresAt: Date.now() + TTL_MS });
