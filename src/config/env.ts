@@ -52,6 +52,11 @@ const schema = z
       z.string().startsWith("ulk_").optional(),
     ),
     NA_PISTA_RECONCILE_INTERVAL_MS: z.coerce.number().int().min(1_000).default(30_000),
+    /**
+     * Vercel Cron secret (sent as `Authorization: Bearer …`) for the daily provisioning safety net
+     * (GET /v1/internal/cron/reconcile-provisioning). Unset → the route does not exist. A deployment secret.
+     */
+    CRON_SECRET: z.preprocess((v) => (v === "" ? undefined : v), z.string().min(16).optional()),
   })
   .superRefine((value, ctx) => {
     if (value.NODE_ENV === "production" && !value.NA_PISTA_CREDENTIAL_ENCRYPTION_KEY) {

@@ -5,9 +5,9 @@ import { startProvisioningReconciler, stopProvisioningReconciler } from "./modul
 import { logger } from "./shared/logger.js";
 
 /**
- * The persistent worker process (Railway in production; `npm run start:worker` locally): runs ONLY the D2-B
- * provisioning reconciler, which pulls each activated organization's managed UL Platform credential. The HTTP API
- * runs as a Vercel Function (api/index.js) and never starts it — a serverless function has no continuous process.
+ * OPTIONAL persistent worker (`npm run start:worker`; local harnesses or a self-hosted deployment): runs ONLY the D2-B
+ * provisioning reconciler on an interval. Production does NOT run it (owner decision 2026-10-18 — no service billing
+ * 24/7 while unused): provisioning there is on demand (resolver.ts) plus a daily Vercel Cron (vercel.json).
  *
  * Fails fast (exit 1, so the platform's restart policy and alerts see it) when the database is unreachable or no
  * PROVISIONER credential is configured: a worker that "runs" without doing anything would hide the problem.

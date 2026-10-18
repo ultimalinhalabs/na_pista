@@ -5,6 +5,7 @@ import { env } from "./config/env.js";
 import { openApiDocument } from "./contract/openapi.js";
 import { authenticate } from "./middleware/authenticate.js";
 import { readinessHandler } from "./health/readiness.js";
+import { cronReconcileHandler } from "./modules/platformCredentials/cron.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import { appointmentsRouter } from "./modules/appointments/routes.js";
 import { auditRouter } from "./modules/audit/routes.js";
@@ -38,6 +39,8 @@ export function buildApp() {
   app.get("/v1/health", (_req, res) => ok(res, { status: "ok" }));
   // Readiness: the process can serve traffic (its database answers). Unauthenticated, no details.
   app.get("/v1/health/ready", readinessHandler());
+  // Daily provisioning safety net (Vercel Cron, bearer CRON_SECRET; 404 otherwise) — no 24/7 worker.
+  app.get("/v1/internal/cron/reconcile-provisioning", cronReconcileHandler);
   // ADR-054: the public contract — unauthenticated, contains no secret or internal detail.
   app.get("/v1/openapi.json", (_req, res) => {
     res.json(openApiDocument());

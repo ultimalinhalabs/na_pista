@@ -53,6 +53,17 @@ export const PaginationSchema = z
 export const RemovedSchema = z.strictObject({ removed: z.literal(true) }).meta({ id: "Removed" });
 export const HealthSchema = z.strictObject({ status: z.literal("ok") }).meta({ id: "Health" });
 export const ReadinessSchema = z.strictObject({ status: z.literal("ready") }).meta({ id: "Readiness" });
+/** Daily provisioning safety net (Vercel Cron) — counts only, never a credential. */
+export const ProvisioningCronResultSchema = z
+  .strictObject({
+    ran: z.boolean(),
+    confirmed: z.number().int().optional(),
+    issued: z.number().int().optional(),
+    revokedLocally: z.number().int().optional(),
+    skipped: z.number().int().optional(),
+    failed: z.number().int().optional(),
+  })
+  .meta({ id: "ProvisioningCronResult" });
 export const OpenApiDocumentSchema = z
   .looseObject({ openapi: z.string(), info: z.looseObject({}), paths: z.looseObject({}) })
   .meta({ id: "OpenApiDocument", description: "This document (OpenAPI 3.1)." });

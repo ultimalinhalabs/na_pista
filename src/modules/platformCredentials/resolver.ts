@@ -97,6 +97,22 @@ export async function resolvePlatformCredential(organizationId: string, opts: Re
     fail(organizationId, "STORE_UNAVAILABLE", requestId);
   }
 
+  if (!row && env.NA_PISTA_PROVISIONING_CREDENTIAL) {
+    // On-demand provisioning (2026-10-18): an organization activated a moment ago has an open provisioning
+    // request at the Platform but nothing here yet — pull it now instead of waiting for a background worker.
+    // Deduplicated/throttled per process (reconciler.ts); dynamic import keeps the module graph acyclic.
+    const { reconcileOnDemand } = await import("./reconciler.js");
+    const result = await reconcileOnDemand("first_request");
+    if (result && (result.confirmed > 0 || result.issued > 0)) {
+      invalidatePlatformCredentialCache(organizationId);
+      try {
+        row = await loadRow(organizationId);
+      } catch {
+        fail(organizationId, "STORE_UNAVAILABLE", requestId);
+      }
+    }
+  }
+
   if (!row) {
     // Test/dev-only override (src/platform/serviceAuth.ts): consulted ONLY
     // when the database has no row at all for this organization, and never

@@ -33,6 +33,7 @@ import {
   CustomerSchema,
   HealthSchema,
   ReadinessSchema,
+  ProvisioningCronResultSchema,
   OpenApiDocumentSchema,
   InventoryBalanceSchema,
   OrderDetailSchema,
@@ -116,6 +117,15 @@ export const operations: Operation[] = [
     description: "Public. 200 when the service can serve traffic (its database answers); 503 NOT_READY otherwise. Never returns dependency details.",
     auth: "public",
     success: { status: 200, kind: "data", schema: ReadinessSchema },
+  },
+  {
+    method: "get",
+    path: "/internal/cron/reconcile-provisioning",
+    tag: "Platform",
+    summary: "Daily provisioning safety net (Vercel Cron)",
+    description: "Deployment-internal: requires `Authorization: Bearer <CRON_SECRET>`; without it (or with a wrong one) the answer is 404. Runs one provisioning reconcile cycle and returns counts only.",
+    auth: "public",
+    success: { status: 200, kind: "data", schema: ProvisioningCronResultSchema },
   },
   {
     method: "get",
