@@ -4,6 +4,7 @@ import { recordAuditEvent } from "../audit/service.js";
 import { getCategory } from "../categories/repository.js";
 import { NotFoundError, ValidationError } from "../../shared/errors.js";
 import { pageRequest, type Page } from "../../shared/listing.js";
+import { assertProductCapacityInTx, resolveProductLimit } from "./planLimit.js";
 import { countProducts, getProduct, insertProduct, listProducts, updateProduct, type ProductFilters, type TenantContext } from "./repository.js";
 import { PRODUCTS_DEFAULT_PAGE_SIZE, type ListProductsQuery } from "./schemas.js";
 
@@ -36,8 +37,11 @@ export async function createProduct(
   input: { name: string; description?: string; categoryId?: string; unit?: "UNIT" | "KG" | "G" | "L" | "ML"; price?: string },
 ) {
   await assertCategoryBelongsToTenant(tenant, input.categoryId);
+  // A new product is ACTIVE: the plan's products.max applies (planLimit.ts).
+  const max = await resolveProductLimit(tenant.organizationId, requestId);
 
   const product = await db.transaction(async (tx) => {
+    await assertProductCapacityInTx(tx, tenant.organizationId, max);
     const row = await insertProduct(tenant, input, tx);
     await recordAuditEvent(
       {
@@ -97,10 +101,13 @@ export async function updateProductOrThrow(
   if (patch.categoryId !== undefined) {
     await assertCategoryBelongsToTenant(tenant, patch.categoryId);
   }
+  // Reactivating an archived product counts against the plan's products.max like a creation (planLimit.ts).
+  const max = patch.status === "ACTIVE" ? await resolveProductLimit(tenant.organizationId, requestId) : null;
 
   const product = await db.transaction(async (tx) => {
     const existing = await getProduct(tenant, id, tx);
     if (!existing) throw new NotFoundError("Product not found");
+    if (patch.status === "ACTIVE" && existing.status === "ARCHIVED") await assertProductCapacityInTx(tx, tenant.organizationId, max);
     const row = await updateProduct(tenant, id, patch, tx);
     await recordAuditEvent(
       {

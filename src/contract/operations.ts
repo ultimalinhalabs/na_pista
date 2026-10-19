@@ -135,10 +135,10 @@ export const operations: Operation[] = [
   { method: "delete", path: `${ORG}/categories/:categoryId`, tag: "Categories", summary: "Archive a category", description: "Archives (never physically deletes) and returns the archived category.", auth: write("categories.delete"), success: { status: 200, kind: "data", schema: CategorySchema } },
 
   // ------------------------------------------------------------- products
-  { method: "post", path: `${ORG}/products`, tag: "Products", summary: "Create a product", auth: write("products.create"), body: createProductSchema, success: { status: 201, kind: "data", schema: ProductSchema } },
+  { method: "post", path: `${ORG}/products`, tag: "Products", summary: "Create a product", description: "A new product is ACTIVE and counts against the plan's `products.max` (UL Platform entitlement); at the limit → 409 LIMIT_EXCEEDED.", auth: write("products.create"), body: createProductSchema, conflicts: ["LIMIT_EXCEEDED"], success: { status: 201, kind: "data", schema: ProductSchema } },
   { method: "get", path: `${ORG}/products`, tag: "Products", summary: "List products", auth: read("products.read"), query: listProductsQuerySchema, success: { status: 200, kind: "page", schema: ProductSchema } },
   { method: "get", path: `${ORG}/products/:productId`, tag: "Products", summary: "Get a product", auth: read("products.read"), success: { status: 200, kind: "data", schema: ProductSchema } },
-  { method: "patch", path: `${ORG}/products/:productId`, tag: "Products", summary: "Update a product", auth: write("products.update"), body: updateProductSchema, success: { status: 200, kind: "data", schema: ProductSchema } },
+  { method: "patch", path: `${ORG}/products/:productId`, tag: "Products", summary: "Update a product", description: "Reactivating an archived product (status ACTIVE) counts against the plan's `products.max`; at the limit → 409 LIMIT_EXCEEDED.", auth: write("products.update"), body: updateProductSchema, conflicts: ["LIMIT_EXCEEDED"], success: { status: 200, kind: "data", schema: ProductSchema } },
   { method: "delete", path: `${ORG}/products/:productId`, tag: "Products", summary: "Archive a product", description: "Archives (never physically deletes) and returns the archived product.", auth: write("products.delete"), success: { status: 200, kind: "data", schema: ProductSchema } },
 
   // ------------------------------------------------------------ customers

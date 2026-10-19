@@ -854,6 +854,7 @@
           "Products"
         ],
         "summary": "Create a product",
+        "description": "A new product is ACTIVE and counts against the plan's `products.max` (UL Platform entitlement); at the limit → 409 LIMIT_EXCEEDED.",
         "x-na-pista-permission": "products.create",
         "x-na-pista-scope": "catalog.write",
         "x-na-pista-capability": "catalog.enabled",
@@ -963,7 +964,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `LIMIT_EXCEEDED`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1313,6 +1314,7 @@
           "Products"
         ],
         "summary": "Update a product",
+        "description": "Reactivating an archived product (status ACTIVE) counts against the plan's `products.max`; at the limit → 409 LIMIT_EXCEEDED.",
         "x-na-pista-permission": "products.update",
         "x-na-pista-scope": "catalog.write",
         "x-na-pista-capability": "catalog.enabled",
@@ -1460,7 +1462,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `LIMIT_EXCEEDED`.",
             "content": {
               "application/json": {
                 "schema": {
