@@ -4,6 +4,30 @@
 > configurações de produção. Segue o padrão que a UL Platform já usa em produção: API HTTP na Vercel e um
 > worker persistente na Railway.
 
+> **Decisões do dono (16/10/2026):**
+> - **Base de dados: manter a mesma** (opção B, `jpwoyo…`), sem limpeza destrutiva;
+> - **Domínios temporários:** `napista.ultimalinha.ao` (Console) e `api-napista.ultimalinha.ao` (API);
+> - **Código de alojamento implementado** em `feature/production-hosting`: `api/index.js`, `vercel.json`,
+>   `src/worker.ts`, `railway.json`, `prepare: false` e `engines` 24.x.
+
+## 0. Decisão de 2026-10-18 — sem worker 24/7 (substitui a parte Railway abaixo)
+
+O dono não quer um serviço a gerar custos 24 horas por dia sem utilização. O worker da Railway **foi retirado**
+(`railway.json` apagado). O provisionamento da credencial gerida passa a correr **a pedido**, dentro da própria
+API na Vercel (funções que só custam enquanto respondem):
+
+1. **Primeiro pedido:** quando uma organização acabada de ativar abre a Na Pista e ainda não tem credencial,
+   o `resolver.ts` corre um ciclo do reconciliador (`reconcileOnDemand`), partilhado por pedidos simultâneos e
+   limitado a um ciclo por 15 s por instância. A credencial fica ativa nesse mesmo pedido.
+2. **Rede de segurança diária:** a Vercel Cron chama `GET /v1/internal/cron/reconcile-provisioning` uma vez por
+   dia (05:00 UTC; o plano Hobby só permite cron diário) com `Authorization: Bearer <CRON_SECRET>`. Sem o segredo, a
+   rota responde 404.
+
+Variáveis no projeto Vercel `na-pista` (todas sensíveis): `NA_PISTA_PROVISIONING_CREDENTIAL` (PROVISIONER,
+scope `credential.provision`, emitida na UL Console) e `CRON_SECRET` (aleatório, ≥ 16 caracteres). As variáveis
+`NA_PISTA_RECONCILE_INTERVAL_MS` e o serviço Railway deixam de ser necessários. `npm run start:worker` mantém-se
+apenas para ensaios locais.
+
 ## 1. Situação atual (verificada)
 
 - A Na Pista **não tem destino de produção**: não há projeto Vercel nem configuração Railway. O README diz
@@ -26,7 +50,7 @@
 ```text
                  ┌──────────────── Vercel (equipa ultima-linha) ────────────────┐
 Browser ───────► │ na-pista-console (Next.js)   napista.ultimalinha.ao           │
-                 │ na-pista (API, função Node)  napista-api.ultimalinha.ao  ─────┼──► UL Platform API (api.ultimalinha.ao)
+                 │ na-pista (API, função Node)  api-napista.ultimalinha.ao  ─────┼──► UL Platform API (api.ultimalinha.ao)
                  └───────────────────────────────────────────────────────────────┘
                  ┌──────── Railway ────────┐
                  │ na-pista-worker         │  reconciliador D2-B (processo contínuo) ──► UL Platform API
@@ -62,7 +86,7 @@ Em qualquer das opções:
 
 ## 4. Domínios (DNS na AngoWeb)
 
-- `napista-api.ultimalinha.ao` → CNAME para o alvo que a Vercel indicar (projeto `na-pista`).
+- `api-napista.ultimalinha.ao` → CNAME para o alvo que a Vercel indicar (projeto `na-pista`).
 - `napista.ultimalinha.ao` → CNAME para a Vercel (projeto `na-pista-console`).
 - Alternativa: um domínio próprio `napista.ao`, se existir. Decisão do dono.
 - Supabase Auth: acrescentar `https://napista.ultimalinha.ao` à allow-list de redirects. É a mesma identidade
@@ -91,7 +115,7 @@ Em qualquer das opções:
 
 **Console (Vercel):**
 - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (públicas);
-- `NEXT_PUBLIC_NA_PISTA_API_URL=https://napista-api.ultimalinha.ao/v1`;
+- `NEXT_PUBLIC_NA_PISTA_API_URL=https://api-napista.ultimalinha.ao/v1`;
 - `NEXT_PUBLIC_PLATFORM_API_URL=https://api.ultimalinha.ao/v1`;
 - `NEXT_PUBLIC_UL_CLIENT_URL=https://platform.ultimalinha.ao`.
 

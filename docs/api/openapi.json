@@ -116,6 +116,37 @@
         }
       }
     },
+    "/internal/cron/reconcile-provisioning": {
+      "get": {
+        "operationId": "getInternalCronReconcileProvisioning",
+        "tags": [
+          "Platform"
+        ],
+        "summary": "Daily provisioning safety net (Vercel Cron)",
+        "description": "Deployment-internal: requires `Authorization: Bearer <CRON_SECRET>`; without it (or with a wrong one) the answer is 404. Runs one provisioning reconcile cycle and returns counts only.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ProvisioningCronResult"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/openapi.json": {
       "get": {
         "operationId": "getOpenapi.json",
@@ -9742,6 +9773,42 @@
           "professionalId",
           "serviceId",
           "createdAt"
+        ]
+      },
+      "ProvisioningCronResult": {
+        "type": "object",
+        "properties": {
+          "ran": {
+            "type": "boolean"
+          },
+          "confirmed": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "issued": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "revokedLocally": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "skipped": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "failed": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "ran"
         ]
       },
       "Readiness": {

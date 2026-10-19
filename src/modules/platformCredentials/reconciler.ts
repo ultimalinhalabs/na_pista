@@ -133,6 +133,43 @@ export async function reconcileOnce(opts: ReconcileOptions): Promise<ReconcileRe
   return result;
 }
 
+/**
+ * On-demand reconcile (owner decision 2026-10-18: no service running 24/7 while nobody uses it). Runs ONE cycle,
+ * shared by every concurrent caller in this process, and at most once per ON_DEMAND_MIN_INTERVAL_MS — so an
+ * organization that is genuinely not provisioned never turns each of its requests into Platform traffic.
+ * Triggers: the first request of an organization without a credential (resolver.ts) and the daily Vercel Cron
+ * (routes/cron.ts). Returns null when no provisioner credential is configured or the cycle was skipped.
+ */
+export const ON_DEMAND_MIN_INTERVAL_MS = 15_000;
+let inFlight: Promise<ReconcileResult | null> | undefined;
+let lastStartedAt = 0;
+
+export function reconcileOnDemand(trigger: string, opts: { force?: boolean; provisioningCredential?: string } = {}): Promise<ReconcileResult | null> {
+  const provisioningCredential = opts.provisioningCredential ?? env.NA_PISTA_PROVISIONING_CREDENTIAL;
+  if (!provisioningCredential) return Promise.resolve(null);
+  if (inFlight) return inFlight;
+  if (!opts.force && Date.now() - lastStartedAt < ON_DEMAND_MIN_INTERVAL_MS) return Promise.resolve(null);
+  lastStartedAt = Date.now();
+  inFlight = reconcileOnce({ provisioningCredential, requestId: `reconcile:${trigger}` })
+    .then((result) => {
+      if (result.issued || result.confirmed || result.revokedLocally || result.failed) logger.info("platform_credential.reconciled", { trigger, ...result });
+      return result;
+    })
+    .catch((error) => {
+      logger.warn("platform_credential.reconcile_failed", { stage: "on_demand", trigger, error: error instanceof Error ? error.name : "unknown" });
+      return null;
+    })
+    .finally(() => {
+      inFlight = undefined;
+    });
+  return inFlight;
+}
+
+/** Test seam: forget the on-demand throttle. */
+export function _resetOnDemandReconcile() {
+  lastStartedAt = 0;
+}
+
 let timer: NodeJS.Timeout | undefined;
 let running = false;
 
