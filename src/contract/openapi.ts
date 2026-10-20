@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { operations, type Operation } from "./operations.js";
+import { capabilityOf, operations, type Operation } from "./operations.js";
 import * as contract from "./schemas.js";
 
 /**
@@ -193,7 +193,7 @@ function operationObject(op: Operation, idOf: Map<z.ZodType, string>) {
     ...(auth === "public" ? { security: [] } : {}),
     ...(permission ? { "x-na-pista-permission": permission } : {}),
     ...(auth !== "public" && auth.scope ? { "x-na-pista-scope": auth.scope } : {}),
-    ...(auth !== "public" && auth.capabilityGate !== false ? { "x-na-pista-capability": "catalog.enabled" } : {}),
+    ...(capabilityOf(op) ? { "x-na-pista-capability": capabilityOf(op) } : {}),
     ...(parameters.length ? { parameters } : {}),
     ...(op.body
       ? { requestBody: { required: true, content: { "application/json": { schema: inputSchema(op.body) } } } }

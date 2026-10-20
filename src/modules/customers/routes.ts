@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { CATALOG_CAPABILITY_KEY, requireCapability } from "../../middleware/requireCapability.js";
+import { requireModule } from "../../middleware/requireCapability.js";
 import { requireAuthorized } from "../../middleware/requireAuthorized.js";
 import { requireTenantContext } from "../../tenancy/tenantContext.js";
 import { actorFromRequest } from "../../tenancy/actor.js";
@@ -17,7 +17,7 @@ validateUuidParams(customersRouter);
  * na-pista/docs/f21-report.md "Entitlement" for why no new Platform
  * entitlement was invented for Customers).
  */
-const GATE = [requireTenantContext(), requireCapability(CATALOG_CAPABILITY_KEY)] as const;
+const GATE = [requireTenantContext(), requireModule("customers")] as const;
 
 customersRouter.post(
   "/organizations/:organizationId/customers",

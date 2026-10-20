@@ -15,26 +15,28 @@ export interface RawEntitlement {
 }
 export interface RawEntitlementsResponse {
   application: { key: string; name: string };
+  /** UL migration 0031 — absent on older UL versions. `effective: false` = nothing is granted (suspended org, revoked access, expired/revoked grant). */
+  access?: { effective: boolean; reason: string | null };
   subscription: { id: string; status: string; planKey: string } | null;
   entitlements: RawEntitlement[];
 }
 
 export interface CapabilityDecision {
   enabled: boolean;
-  reason: "granting-subscription" | "no-subscription" | "entitlement-false" | "entitlement-missing" | "entitlement-invalid";
+  reason: "granting-subscription" | "no-subscription" | "entitlement-false" | "entitlement-missing" | "entitlement-invalid" | "dependency-missing";
   raw: unknown;
 }
 
 /**
  * Fail-closed rules (OD-13):
- *  - no granting subscription at all      -> disabled
+ *  - no granting subscription at all, or UL says access is not effective -> disabled
  *  - key absent from the resolved list    -> disabled (never "assume enabled")
  *  - value === false                      -> disabled
  *  - value === true                       -> enabled
  *  - anything else (string, object, number, null) -> invalid -> disabled
  */
 export function interpretCapability(resp: RawEntitlementsResponse | null, key: string): CapabilityDecision {
-  if (!resp || !resp.subscription) {
+  if (!resp || !resp.subscription || resp.access?.effective === false) {
     return { enabled: false, reason: "no-subscription", raw: null };
   }
   const found = resp.entitlements.find((e) => e.key === key);
@@ -50,6 +52,47 @@ export function interpretCapability(resp: RawEntitlementsResponse | null, key: s
   return { enabled: false, reason: "entitlement-invalid", raw: found.value };
 }
 
+/**
+ * Audit 2026-10-20 / UL migration 0031 — one entitlement per module instead of `catalog.enabled` for everything:
+ *  - catalog   = products, categories, stock        (catalog.enabled)
+ *  - orders    = orders                             (orders.enabled; requires catalog — order items are products)
+ *  - customers = customers                          (customers.enabled)
+ *  - services  = services, professionals, schedules, appointments (services.enabled; requires customers — every appointment has one)
+ * Dependencies are validated by UL on every plan, and checked again here (defence in depth).
+ *
+ * TRANSITION (remove once every plan in production carries the per-module keys — audit §12.5 phase 8): a module
+ * key that is ABSENT (not false) falls back to `catalog.enabled`, so a UL Platform that has not yet loaded the
+ * new keys keeps today's behaviour. An explicit `false` is always honoured.
+ */
+export const MODULE_KEYS = {
+  catalog: "catalog.enabled",
+  orders: "orders.enabled",
+  customers: "customers.enabled",
+  services: "services.enabled",
+} as const;
+export type ModuleName = keyof typeof MODULE_KEYS;
+export const MODULE_NAMES = Object.keys(MODULE_KEYS) as ModuleName[];
+const MODULE_REQUIRES: Record<ModuleName, ModuleName[]> = { catalog: [], orders: ["catalog"], customers: [], services: ["customers"] };
+
+export function interpretModule(resp: RawEntitlementsResponse | null, module: ModuleName): CapabilityDecision & { legacyFallback: boolean } {
+  let decision = interpretCapability(resp, MODULE_KEYS[module]);
+  let legacyFallback = false;
+  if (module !== "catalog" && decision.reason === "entitlement-missing") {
+    decision = interpretCapability(resp, MODULE_KEYS.catalog);
+    legacyFallback = true;
+  }
+  if (!decision.enabled) return { ...decision, legacyFallback };
+  for (const required of MODULE_REQUIRES[module]) {
+    if (!interpretModule(resp, required).enabled) return { enabled: false, reason: "dependency-missing", raw: decision.raw, legacyFallback };
+  }
+  return { ...decision, legacyFallback };
+}
+
+/** Which modules the organization's plan enables — what the Console shows. */
+export function enabledModules(resp: RawEntitlementsResponse | null): Record<ModuleName, boolean> {
+  return Object.fromEntries(MODULE_NAMES.map((m) => [m, interpretModule(resp, m).enabled])) as Record<ModuleName, boolean>;
+}
+
 export interface LimitDecision {
   hasLimit: boolean;
   max: number | null;
@@ -57,7 +100,7 @@ export interface LimitDecision {
 }
 
 export function readLimit(resp: RawEntitlementsResponse | null, key: string): LimitDecision {
-  if (!resp || !resp.subscription) return { hasLimit: false, max: null, raw: null };
+  if (!resp || !resp.subscription || resp.access?.effective === false) return { hasLimit: false, max: null, raw: null };
   const found = resp.entitlements.find((e) => e.key === key);
   if (!found) return { hasLimit: false, max: null, raw: undefined };
   if (typeof found.value === "number" && Number.isFinite(found.value)) {

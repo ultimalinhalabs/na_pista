@@ -39,6 +39,7 @@ import {
   OrderDetailSchema,
   OrderSchema,
   OrganizationSettingsSchema,
+  OrganizationModulesSchema,
   PlatformCredentialStatusSchema,
   ProductSchema,
   ProfessionalSchema,
@@ -75,7 +76,7 @@ export interface Operation {
         permission: string | string[];
         /** Service-credential scope; null = human callers only. */
         scope: string | null;
-        /** false = not behind the `catalog.enabled` capability gate. */
+        /** false = not behind a module entitlement gate (see `capabilityOf`). */
         capabilityGate?: boolean;
       };
   query?: z.ZodObject;
@@ -96,6 +97,29 @@ export interface Operation {
 }
 
 const ORG = "/organizations/:organizationId";
+
+/**
+ * The entitlement a gated operation requires (audit 2026-10-20 / UL 0031: one key per module; mirrors the
+ * `requireModule` gates in each router). Organization settings and the audit log need any enabled module.
+ */
+export function capabilityOf(op: Operation): string | null {
+  if (op.auth === "public" || op.auth.capabilityGate === false) return null;
+  if (op.path.endsWith("/settings") || op.tag === "Audit") return "any module";
+  const byTag: Record<string, string> = {
+    Products: "catalog.enabled",
+    Categories: "catalog.enabled",
+    Inventory: "catalog.enabled",
+    Orders: "orders.enabled",
+    Customers: "customers.enabled",
+    Services: "services.enabled",
+    Professionals: "services.enabled",
+    Scheduling: "services.enabled",
+    Appointments: "services.enabled",
+  };
+  const key = byTag[op.tag];
+  if (!key) throw new Error(`No module entitlement mapped for tag "${op.tag}"`);
+  return key;
+}
 const read = (permission: string) => ({ permission, scope: "catalog.read" });
 const write = (permission: string) => ({ permission, scope: "catalog.write" });
 
@@ -245,5 +269,16 @@ export const operations: Operation[] = [
       "Not behind the capability gate, so it stays readable when the credential is missing or revoked.",
     auth: { permission: "integrations.read", scope: null, capabilityGate: false },
     success: { status: 200, kind: "data", schema: PlatformCredentialStatusSchema },
+  },
+  {
+    method: "get",
+    path: `${ORG}/modules`,
+    tag: "Integration",
+    summary: "Modules the organization's plan enables",
+    description:
+      "Display only (the Console hides modules that are not contracted): every module route still enforces its own entitlement. " +
+      "Not behind a module gate. Human callers only, every role.",
+    auth: { permission: "modules.read", scope: null, capabilityGate: false },
+    success: { status: 200, kind: "data", schema: OrganizationModulesSchema },
   },
 ];

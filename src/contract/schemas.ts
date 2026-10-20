@@ -334,6 +334,15 @@ export const AuditEventSchema = z
   })
   .meta({ id: "AuditEvent" });
 
+export const OrganizationModulesSchema = z
+  .strictObject({
+    catalog: z.boolean().meta({ description: "Products, categories and stock (`catalog.enabled`)." }),
+    orders: z.boolean().meta({ description: "Orders (`orders.enabled`; requires catalog)." }),
+    customers: z.boolean().meta({ description: "Customers (`customers.enabled`)." }),
+    services: z.boolean().meta({ description: "Services, professionals, schedules and appointments (`services.enabled`; requires customers)." }),
+  })
+  .meta({ id: "OrganizationModules" });
+
 export const PlatformCredentialStatusSchema = z
   .strictObject({
     configured: z.boolean().meta({ description: "A credential record exists for this organization." }),

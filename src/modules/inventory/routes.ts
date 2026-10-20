@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { CATALOG_CAPABILITY_KEY, requireCapability } from "../../middleware/requireCapability.js";
+import { requireModule } from "../../middleware/requireCapability.js";
 import { requireAuthorized } from "../../middleware/requireAuthorized.js";
 import { requireTenantContext } from "../../tenancy/tenantContext.js";
 import { actorFromRequest } from "../../tenancy/actor.js";
@@ -14,7 +14,7 @@ import { createMovement, getBalanceOrThrow, listBalancesPage, listMovementsPage 
 export const inventoryRouter = Router();
 validateUuidParams(inventoryRouter);
 
-const GATE = [requireTenantContext(), requireCapability(CATALOG_CAPABILITY_KEY)] as const;
+const GATE = [requireTenantContext(), requireModule("catalog")] as const;
 
 inventoryRouter.get(
   "/organizations/:organizationId/inventory",

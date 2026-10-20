@@ -12,8 +12,10 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
  * NA_PISTA plan (ADR-014/ADR-022: Na Pista never resolves plans itself) and
  * enforced HERE, on the server, for every path that makes a product active:
  * creation and reactivation of an archived product. Archiving is always
- * allowed. A plan without `products.max` has no product limit; a value that
- * is present but not a non-negative integer fails closed. When a plan is
+ * allowed. A plan without `products.max` is REFUSED (UL entitlement definition
+ * `products.max`: absent policy `deny` — audit 2026-10-20: an absent limit never
+ * silently means unlimited; every Na Pista plan sets it); a value that is
+ * present but not a non-negative integer fails closed too. When a plan is
  * downgraded below the current count, existing products stay (nothing is
  * archived automatically) — only new activations are refused.
  */
@@ -25,17 +27,17 @@ export const productLimitSource = {
     readLimit(await fetchEntitlements(organizationId, requestId), PRODUCTS_LIMIT_KEY),
 };
 
-/** null = the plan sets no product limit. Resolved before the transaction (a Platform call never holds a DB lock). */
-export async function resolveProductLimit(organizationId: string, requestId?: string): Promise<number | null> {
+/** The limit, or a refusal (absent or invalid). Resolved before the transaction (a Platform call never holds a DB lock). */
+export async function resolveProductLimit(organizationId: string, requestId?: string): Promise<number> {
   const decision = await productLimitSource.resolve(organizationId, requestId);
   if (decision.hasLimit) {
     if (!Number.isInteger(decision.max) || (decision.max as number) < 0) {
       throw new EntitlementRequiredError(`Invalid "${PRODUCTS_LIMIT_KEY}" entitlement`);
     }
-    return decision.max;
+    return decision.max as number;
   }
   if (decision.raw !== undefined && decision.raw !== null) throw new EntitlementRequiredError(`Invalid "${PRODUCTS_LIMIT_KEY}" entitlement`);
-  return null;
+  throw new EntitlementRequiredError(`The plan sets no "${PRODUCTS_LIMIT_KEY}" — an absent limit is refused, never unlimited`);
 }
 
 /**
