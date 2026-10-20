@@ -1665,7 +1665,7 @@
         "summary": "Create a customer",
         "x-na-pista-permission": "customers.create",
         "x-na-pista-scope": "catalog.write",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "customers.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -1810,7 +1810,7 @@
         "summary": "List customers",
         "x-na-pista-permission": "customers.read",
         "x-na-pista-scope": "catalog.read",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "customers.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -1994,7 +1994,7 @@
         "summary": "Get a customer",
         "x-na-pista-permission": "customers.read",
         "x-na-pista-scope": "catalog.read",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "customers.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -2104,7 +2104,7 @@
         "summary": "Update a customer",
         "x-na-pista-permission": "customers.update",
         "x-na-pista-scope": "catalog.write",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "customers.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -2294,7 +2294,7 @@
         "description": "Archives (never physically deletes) and returns the archived customer.",
         "x-na-pista-permission": "customers.delete",
         "x-na-pista-scope": "catalog.write",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "customers.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -3026,7 +3026,7 @@
         "description": "Prices, totals, currency and status are always derived by the server.",
         "x-na-pista-permission": "orders.create",
         "x-na-pista-scope": "catalog.write",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "orders.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -3189,7 +3189,7 @@
         "description": "List view — items are not included; fetch the order for its items.",
         "x-na-pista-permission": "orders.read",
         "x-na-pista-scope": "catalog.read",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "orders.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -3373,7 +3373,7 @@
         "summary": "Get an order with its items",
         "x-na-pista-permission": "orders.read",
         "x-na-pista-scope": "catalog.read",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "orders.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -3483,7 +3483,7 @@
         "summary": "Update a draft order",
         "x-na-pista-permission": "orders.update",
         "x-na-pista-scope": "catalog.write",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "orders.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -3639,7 +3639,7 @@
         "summary": "Add an item to a draft order",
         "x-na-pista-permission": "orders.update",
         "x-na-pista-scope": "catalog.write",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "orders.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -3798,7 +3798,7 @@
         "summary": "Change an item's quantity",
         "x-na-pista-permission": "orders.update",
         "x-na-pista-scope": "catalog.write",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "orders.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -3959,7 +3959,7 @@
         "summary": "Remove an item from a draft order",
         "x-na-pista-permission": "orders.update",
         "x-na-pista-scope": "catalog.write",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "orders.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -4091,7 +4091,7 @@
         "description": "Atomically decreases stock for every item; nothing partially commits.",
         "x-na-pista-permission": "orders.update",
         "x-na-pista-scope": "catalog.write",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "orders.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -4214,7 +4214,7 @@
         "description": "From CONFIRMED, returns exactly the stock the order consumed.",
         "x-na-pista-permission": "orders.update",
         "x-na-pista-scope": "catalog.write",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "orders.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -4336,7 +4336,7 @@
         "summary": "Complete an order (CONFIRMED → COMPLETED)",
         "x-na-pista-permission": "orders.update",
         "x-na-pista-scope": "catalog.write",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "orders.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -4458,7 +4458,7 @@
         "summary": "Create a service",
         "x-na-pista-permission": "services.create",
         "x-na-pista-scope": "catalog.write",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "services.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -4606,7 +4606,7 @@
         "summary": "List services",
         "x-na-pista-permission": "services.read",
         "x-na-pista-scope": "catalog.read",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "services.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -4790,7 +4790,7 @@
         "summary": "Get a service",
         "x-na-pista-permission": "services.read",
         "x-na-pista-scope": "catalog.read",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "services.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -4900,7 +4900,7 @@
         "summary": "Update, archive or reactivate a service",
         "x-na-pista-permission": "services.update",
         "x-na-pista-scope": "catalog.write",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "services.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -5080,7 +5080,7 @@
         "summary": "Create a professional",
         "x-na-pista-permission": "professionals.create",
         "x-na-pista-scope": "catalog.write",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "services.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -5225,7 +5225,7 @@
         "summary": "List professionals",
         "x-na-pista-permission": "professionals.read",
         "x-na-pista-scope": "catalog.read",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "services.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -5418,7 +5418,7 @@
         "summary": "Get a professional",
         "x-na-pista-permission": "professionals.read",
         "x-na-pista-scope": "catalog.read",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "services.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -5528,7 +5528,7 @@
         "summary": "Update, archive or reactivate a professional",
         "x-na-pista-permission": "professionals.update",
         "x-na-pista-scope": "catalog.write",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "services.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -5720,7 +5720,7 @@
         "description": "Bounded sub-collection (at most the organization's services); not paginated.",
         "x-na-pista-permission": "professionals.read",
         "x-na-pista-scope": "catalog.read",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "services.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -5835,7 +5835,7 @@
         "summary": "Associate a service with a professional",
         "x-na-pista-permission": "professionals.update",
         "x-na-pista-scope": "catalog.write",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "services.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -5964,7 +5964,7 @@
         "summary": "Remove a service from a professional",
         "x-na-pista-permission": "professionals.update",
         "x-na-pista-scope": "catalog.write",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "services.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -6096,7 +6096,7 @@
         "description": "`data` is null until a timezone has been configured.",
         "x-na-pista-permission": "scheduling.read",
         "x-na-pista-scope": "catalog.read",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "any module",
         "parameters": [
           {
             "name": "organizationId",
@@ -6194,7 +6194,7 @@
         "summary": "Set the organization timezone",
         "x-na-pista-permission": "scheduling.update",
         "x-na-pista-scope": "catalog.write",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "any module",
         "parameters": [
           {
             "name": "organizationId",
@@ -6328,7 +6328,7 @@
         "description": "A small weekly rule set; not paginated.",
         "x-na-pista-permission": "scheduling.read",
         "x-na-pista-scope": "catalog.read",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "services.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -6441,7 +6441,7 @@
         "summary": "Replace a professional's weekly schedule",
         "x-na-pista-permission": "scheduling.update",
         "x-na-pista-scope": "catalog.write",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "services.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -6621,7 +6621,7 @@
         "description": "Not paginated (returns the full set).",
         "x-na-pista-permission": "scheduling.read",
         "x-na-pista-scope": "catalog.read",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "services.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -6734,7 +6734,7 @@
         "summary": "Add a date exception (time off or extra hours)",
         "x-na-pista-permission": "scheduling.create",
         "x-na-pista-scope": "catalog.write",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "services.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -6894,7 +6894,7 @@
         "summary": "Remove a date exception",
         "x-na-pista-permission": "scheduling.update",
         "x-na-pista-scope": "catalog.write",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "services.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -7025,7 +7025,7 @@
         "summary": "Compute working intervals (and service start times)",
         "x-na-pista-permission": "scheduling.read",
         "x-na-pista-scope": "catalog.read",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "services.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -7175,7 +7175,7 @@
         "description": "End time is derived from the service duration; the start must be a bookable slot.",
         "x-na-pista-permission": "appointments.create",
         "x-na-pista-scope": "catalog.write",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "services.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -7326,7 +7326,7 @@
         "description": "`from`/`to` are required organization-local dates, at most 31 days apart.",
         "x-na-pista-permission": "appointments.read",
         "x-na-pista-scope": "catalog.read",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "services.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -7520,7 +7520,7 @@
         "summary": "Get an appointment",
         "x-na-pista-permission": "appointments.read",
         "x-na-pista-scope": "catalog.read",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "services.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -7630,7 +7630,7 @@
         "summary": "Reschedule or edit an appointment",
         "x-na-pista-permission": "appointments.update",
         "x-na-pista-scope": "catalog.write",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "services.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -7794,7 +7794,7 @@
         "summary": "Cancel an appointment",
         "x-na-pista-permission": "appointments.update",
         "x-na-pista-scope": "catalog.write",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "services.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -7944,7 +7944,7 @@
         "summary": "Complete an appointment",
         "x-na-pista-permission": "appointments.update",
         "x-na-pista-scope": "catalog.write",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "services.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -8066,7 +8066,7 @@
         "summary": "Mark an appointment as a no-show",
         "x-na-pista-permission": "appointments.update",
         "x-na-pista-scope": "catalog.write",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "services.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -8210,7 +8210,7 @@
         "summary": "List bookable start times for a service on a date",
         "x-na-pista-permission": "appointments.read",
         "x-na-pista-scope": "catalog.read",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "services.enabled",
         "parameters": [
           {
             "name": "organizationId",
@@ -8350,7 +8350,7 @@
         "summary": "List the organization's business audit events",
         "description": "Newest first. Read-only, human callers only (OWNER/ADMIN). Metadata keys that look like secrets are redacted. For stable paging of a growing log, pin `to` to the time of your first request.",
         "x-na-pista-permission": "audit.read",
-        "x-na-pista-capability": "catalog.enabled",
+        "x-na-pista-capability": "any module",
         "parameters": [
           {
             "name": "organizationId",
@@ -8572,6 +8572,98 @@
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/PlatformCredentialStatus"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (see `error.details`). Codes: `VALIDATION_ERROR`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, malformed, expired or rejected credentials. Codes: `UNAUTHORIZED`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a member of / not scoped to this organization, missing permission or scope. Codes: `FORBIDDEN`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected error. Report the X-Request-ID. Codes: `INTERNAL_ERROR`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "A required dependency (UL Platform or Na Pista's database) is unavailable. Retry later. Codes: `UPSTREAM_UNAVAILABLE`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/organizations/{organizationId}/modules": {
+      "get": {
+        "operationId": "getOrganizationsByOrganizationIdModules",
+        "tags": [
+          "Integration"
+        ],
+        "summary": "Modules the organization's plan enables",
+        "description": "Display only (the Console hides modules that are not contracted): every module route still enforces its own entitlement. Not behind a module gate. Human callers only, every role.",
+        "x-na-pista-permission": "modules.read",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/OrganizationModules"
                     }
                   }
                 }
@@ -9467,6 +9559,33 @@
           "updatedAt"
         ],
         "description": "List view — no items."
+      },
+      "OrganizationModules": {
+        "type": "object",
+        "properties": {
+          "catalog": {
+            "type": "boolean",
+            "description": "Products, categories and stock (`catalog.enabled`)."
+          },
+          "orders": {
+            "type": "boolean",
+            "description": "Orders (`orders.enabled`; requires catalog)."
+          },
+          "customers": {
+            "type": "boolean",
+            "description": "Customers (`customers.enabled`)."
+          },
+          "services": {
+            "type": "boolean",
+            "description": "Services, professionals, schedules and appointments (`services.enabled`; requires customers)."
+          }
+        },
+        "required": [
+          "catalog",
+          "orders",
+          "customers",
+          "services"
+        ]
       },
       "OrganizationSettings": {
         "type": "object",

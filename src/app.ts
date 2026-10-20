@@ -9,6 +9,7 @@ import { cronReconcileHandler } from "./modules/platformCredentials/cron.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import { appointmentsRouter } from "./modules/appointments/routes.js";
 import { auditRouter } from "./modules/audit/routes.js";
+import { organizationModulesRouter } from "./modules/organizationModules/routes.js";
 import { categoriesRouter } from "./modules/categories/routes.js";
 import { customersRouter } from "./modules/customers/routes.js";
 import { inventoryRouter } from "./modules/inventory/routes.js";
@@ -60,6 +61,7 @@ export function buildApp() {
     schedulingRouter,
     appointmentsRouter,
     auditRouter,
+    organizationModulesRouter,
     platformCredentialsRouter,
     // Authenticated but no route matched (anonymous callers already got 401: route existence is not disclosed).
     notFoundHandler,

@@ -9,6 +9,7 @@ import { buildOpenApiDocument } from "../../src/contract/openapi.js";
 import { operations } from "../../src/contract/operations.js";
 import { appointmentsRouter } from "../../src/modules/appointments/routes.js";
 import { auditRouter } from "../../src/modules/audit/routes.js";
+import { organizationModulesRouter } from "../../src/modules/organizationModules/routes.js";
 import { platformCredentialsRouter } from "../../src/modules/platformCredentials/routes.js";
 import { categoriesRouter } from "../../src/modules/categories/routes.js";
 import { customersRouter } from "../../src/modules/customers/routes.js";
@@ -43,6 +44,7 @@ function expressRoutes(): string[] {
     schedulingRouter,
     appointmentsRouter,
     auditRouter,
+    organizationModulesRouter,
     platformCredentialsRouter,
   ];
   const app = buildApp() as unknown as { router: { stack: Layer[] } };

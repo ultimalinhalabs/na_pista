@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { CATALOG_CAPABILITY_KEY, requireCapability } from "../../middleware/requireCapability.js";
+import { requireAnyModule } from "../../middleware/requireCapability.js";
 import { requireHumanPermission } from "../../middleware/requireAuthorized.js";
 import { validateUuidParams } from "../../shared/params.js";
 import { okPage } from "../../shared/response.js";
@@ -15,7 +15,7 @@ validateUuidParams(auditRouter);
 auditRouter.get(
   "/organizations/:organizationId/audit-events",
   requireTenantContext(),
-  requireCapability(CATALOG_CAPABILITY_KEY),
+  requireAnyModule(),
   requireHumanPermission("audit.read"),
   async (req, res, next) => {
     try {

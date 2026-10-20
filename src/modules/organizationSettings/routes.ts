@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { CATALOG_CAPABILITY_KEY, requireCapability } from "../../middleware/requireCapability.js";
+import { requireAnyModule } from "../../middleware/requireCapability.js";
 import { requireAuthorized } from "../../middleware/requireAuthorized.js";
 import { requireTenantContext } from "../../tenancy/tenantContext.js";
 import { actorFromRequest } from "../../tenancy/actor.js";
@@ -20,7 +20,7 @@ import { getOrganizationSettingsOrNull, updateOrganizationSettings } from "./ser
 export const organizationSettingsRouter = Router();
 validateUuidParams(organizationSettingsRouter);
 
-const GATE = [requireTenantContext(), requireCapability(CATALOG_CAPABILITY_KEY)] as const;
+const GATE = [requireTenantContext(), requireAnyModule()] as const;
 
 organizationSettingsRouter.get(
   "/organizations/:organizationId/settings",

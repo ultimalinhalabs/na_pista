@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { CATALOG_CAPABILITY_KEY, requireCapability } from "../../middleware/requireCapability.js";
+import { requireModule } from "../../middleware/requireCapability.js";
 import { requireAuthorized } from "../../middleware/requireAuthorized.js";
 import { requireTenantContext } from "../../tenancy/tenantContext.js";
 import { actorFromRequest } from "../../tenancy/actor.js";
@@ -20,7 +20,7 @@ import {
 export const professionalsRouter = Router();
 validateUuidParams(professionalsRouter);
 
-const GATE = [requireTenantContext(), requireCapability(CATALOG_CAPABILITY_KEY)] as const;
+const GATE = [requireTenantContext(), requireModule("services")] as const;
 
 professionalsRouter.post(
   "/organizations/:organizationId/professionals",

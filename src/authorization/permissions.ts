@@ -82,6 +82,7 @@
  */
 export const ROLE_PERMISSIONS: Record<string, string[]> = {
   OWNER: [
+    "modules.read",
     "products.read",
     "products.create",
     "products.update",
@@ -116,6 +117,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     "integrations.read",
   ],
   ADMIN: [
+    "modules.read",
     "products.read",
     "products.create",
     "products.update",
@@ -150,6 +152,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     "integrations.read",
   ],
   MANAGER: [
+    "modules.read",
     "products.read",
     "products.create",
     "products.update",
@@ -179,6 +182,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     "appointments.update",
   ],
   STAFF: [
+    "modules.read",
     "products.read",
     "categories.read",
     "customers.read",

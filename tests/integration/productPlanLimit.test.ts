@@ -29,14 +29,16 @@ async function activeCount(org: { organizationId: string }) {
 }
 const create = (org: { organizationId: string }, name: string) => createProduct(org, actor, undefined, { name });
 
-test("resolveProductLimit: a number is the limit, absence is no limit, anything else fails closed", async (t) => {
+test("resolveProductLimit: a number is the limit; absence and anything else are refused (absent policy deny)", async (t) => {
   t.after(() => mock.restoreAll());
   planAllows(limit(500));
   assert.equal(await resolveProductLimit(randomUUID()), 500);
+  planAllows(limit(0));
+  assert.equal(await resolveProductLimit(randomUUID()), 0);
   planAllows(limit(null, undefined));
-  assert.equal(await resolveProductLimit(randomUUID()), null, "the plan sets no products.max");
+  await assert.rejects(() => resolveProductLimit(randomUUID()), EntitlementRequiredError, "the plan sets no products.max — never unlimited");
   planAllows({ hasLimit: false, max: null, raw: null });
-  assert.equal(await resolveProductLimit(randomUUID()), null, "no subscription (the capability gate refuses before this)");
+  await assert.rejects(() => resolveProductLimit(randomUUID()), EntitlementRequiredError, "no subscription");
   for (const bad of [{ hasLimit: false, max: null, raw: "500" }, { hasLimit: true, max: 2.5, raw: 2.5 }, { hasLimit: true, max: -1, raw: -1 }] as LimitDecision[]) {
     planAllows(bad);
     await assert.rejects(() => resolveProductLimit(randomUUID()), EntitlementRequiredError);
@@ -94,12 +96,12 @@ test("plan change: a downgrade below the current count keeps existing products a
   assert.equal(await activeCount(org), 5);
 });
 
-test("a plan without products.max does not limit; the limit is per organization", async (t) => {
+test("a plan without products.max refuses creation (absent ≠ unlimited); the limit is per organization", async (t) => {
   t.after(() => mock.restoreAll());
   planAllows(limit(null, undefined));
-  const unlimited = newOrg();
-  for (let i = 0; i < 5; i++) await create(unlimited, `U${i}`);
-  assert.equal(await activeCount(unlimited), 5);
+  const noLimit = newOrg();
+  await assert.rejects(() => create(noLimit, "U0"), EntitlementRequiredError);
+  assert.equal(await activeCount(noLimit), 0);
   planAllows(limit(1));
   const a = newOrg();
   const b = newOrg();
