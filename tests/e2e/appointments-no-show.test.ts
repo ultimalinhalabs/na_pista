@@ -105,7 +105,7 @@ test("MANAGER: 200; STAFF: 403 FORBIDDEN and nothing changes", async () => {
 });
 
 test("ADMIN: 200 (fresh subscribed org where an existing fixture user is granted the ADMIN role via the real Platform API)", async () => {
-  const org = await createFreshSubscribedOrg(fixtures);
+  const org = await createFreshSubscribedOrg(fixtures, 1);
   const membership = await call(fixtures.platformBaseUrl, "POST", `/organizations/${org.id}/memberships`, {
     token: org.ownerToken,
     body: { userId: fixtures.managerA.id, roleKey: "ADMIN" },

@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { registerServiceCredential } from "../../src/platform/serviceAuth.js";
+import { type FreshOrg, takeFreshOrg } from "./helpers.js";
 import { addDays, localToInstant, toLocal } from "../../src/modules/appointments/time.js";
 import { call, createProfessional, createService, setTimezone, startApp } from "./schedulingHelpers.js";
 
@@ -14,6 +15,7 @@ export interface F27Fixtures {
   staffA: { id: string; token: string };
   managerA: { id: string; token: string };
   apiKeys: Record<"platformFacingA" | "integrationA" | "platformFacingB", { keyId: string; secret: string; scopes: string[] }>;
+  freshOrgs: FreshOrg[];
 }
 
 const fixturesPath = fileURLToPath(new URL("../../.fixtures/f27-fixtures.json", import.meta.url));
@@ -72,24 +74,11 @@ export function bookBody(seed: Awaited<ReturnType<typeof seedBookable>>, startAt
 }
 
 /**
- * A fresh, subscribed organization WITHOUT a configured timezone, minted
- * inline (the F26 `scheduling-timezone.test.ts` pattern) so no other test
- * file's timezone setup can leak into it.
+ * A fresh, subscribed organization WITHOUT a configured timezone, provisioned by f27 (`freshOrgs`) so no other
+ * test file's timezone setup can leak into it. `index`: each test owns one (see helpers.ts takeFreshOrg).
  */
-export async function createFreshSubscribedOrg(fixtures: F27Fixtures) {
-  const ownerToken = fixtures.orgA.ownerToken;
-  const org = await call(fixtures.platformBaseUrl, "POST", "/organizations", { token: ownerToken, body: { name: `F27_TZ_PROBE_${Date.now()}` } });
-  if (org.status !== 201) throw new Error(`failed to create probe org: ${org.status} ${JSON.stringify(org.error)}`);
-  const { _clearMembershipCache } = await import("../../src/platform/membership.js");
-  _clearMembershipCache();
-  const subscription = await call(fixtures.platformBaseUrl, "POST", `/organizations/${org.data.id}/subscriptions`, { token: ownerToken, body: { applicationKey: "NA_PISTA", planKey: "BUSINESS" } });
-  if (subscription.status !== 201) throw new Error(`failed to subscribe probe org: ${subscription.status}`);
-  const apiKey = await call(fixtures.platformBaseUrl, "POST", `/organizations/${org.data.id}/api-keys`, {
-    token: ownerToken,
-    body: { applicationKey: "NA_PISTA", scopes: ["usage.write", "event.publish"] },
-  });
-  registerServiceCredential(org.data.id, apiKey.data.secret);
-  return { id: org.data.id as string, ownerToken };
+export function createFreshSubscribedOrg(fixtures: F27Fixtures, index: number) {
+  return takeFreshOrg(fixtures.freshOrgs, index);
 }
 
 export async function usageQuantity(fixtures: F27Fixtures, organizationId: string, token: string): Promise<number> {
