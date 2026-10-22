@@ -266,7 +266,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -715,7 +715,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -846,7 +846,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -995,7 +995,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`, `LIMIT_EXCEEDED`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`, `LIMIT_EXCEEDED`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1493,7 +1493,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`, `LIMIT_EXCEEDED`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`, `LIMIT_EXCEEDED`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1624,7 +1624,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1761,7 +1761,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2244,7 +2244,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2375,7 +2375,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2974,7 +2974,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`, `INSUFFICIENT_STOCK`, `PRODUCT_ARCHIVED`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`, `INSUFFICIENT_STOCK`, `PRODUCT_ARCHIVED`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3139,7 +3139,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`, `PRODUCT_ARCHIVED`, `PRODUCT_PRICE_REQUIRED`, `CUSTOMER_ARCHIVED`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`, `PRODUCT_ARCHIVED`, `PRODUCT_PRICE_REQUIRED`, `CUSTOMER_ARCHIVED`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3588,7 +3588,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`, `INVALID_ORDER_STATE`, `CUSTOMER_ARCHIVED`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`, `INVALID_ORDER_STATE`, `CUSTOMER_ARCHIVED`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3747,7 +3747,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`, `INVALID_ORDER_STATE`, `PRODUCT_ARCHIVED`, `PRODUCT_PRICE_REQUIRED`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`, `INVALID_ORDER_STATE`, `PRODUCT_ARCHIVED`, `PRODUCT_PRICE_REQUIRED`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3910,7 +3910,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`, `INVALID_ORDER_STATE`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`, `INVALID_ORDER_STATE`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -4049,7 +4049,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`, `INVALID_ORDER_STATE`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`, `INVALID_ORDER_STATE`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -4172,7 +4172,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`, `INVALID_ORDER_STATE`, `EMPTY_ORDER`, `INSUFFICIENT_STOCK`, `PRODUCT_ARCHIVED`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`, `INVALID_ORDER_STATE`, `EMPTY_ORDER`, `INSUFFICIENT_STOCK`, `PRODUCT_ARCHIVED`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -4295,7 +4295,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`, `INVALID_ORDER_STATE`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`, `INVALID_ORDER_STATE`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -4417,7 +4417,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`, `INVALID_ORDER_STATE`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`, `INVALID_ORDER_STATE`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -4557,7 +4557,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -5029,7 +5029,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -5176,7 +5176,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -5668,7 +5668,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -5925,7 +5925,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`, `PROFESSIONAL_ARCHIVED`, `SERVICE_ARCHIVED`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`, `PROFESSIONAL_ARCHIVED`, `SERVICE_ARCHIVED`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -6054,7 +6054,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -6276,7 +6276,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -6569,7 +6569,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -6843,7 +6843,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -6984,7 +6984,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -7133,7 +7133,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`, `TIMEZONE_NOT_CONFIGURED`, `PROFESSIONAL_ARCHIVED`, `SERVICE_ARCHIVED`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`, `TIMEZONE_NOT_CONFIGURED`, `PROFESSIONAL_ARCHIVED`, `SERVICE_ARCHIVED`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -7276,7 +7276,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`, `APPOINTMENT_CONFLICT`, `APPOINTMENT_OUTSIDE_AVAILABILITY`, `TIMEZONE_NOT_CONFIGURED`, `CUSTOMER_ARCHIVED`, `PROFESSIONAL_ARCHIVED`, `SERVICE_ARCHIVED`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`, `APPOINTMENT_CONFLICT`, `APPOINTMENT_OUTSIDE_AVAILABILITY`, `TIMEZONE_NOT_CONFIGURED`, `CUSTOMER_ARCHIVED`, `PROFESSIONAL_ARCHIVED`, `SERVICE_ARCHIVED`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -7743,7 +7743,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`, `INVALID_APPOINTMENT_STATE`, `APPOINTMENT_CONFLICT`, `APPOINTMENT_OUTSIDE_AVAILABILITY`, `TIMEZONE_NOT_CONFIGURED`, `PROFESSIONAL_ARCHIVED`, `SERVICE_ARCHIVED`, `CUSTOMER_ARCHIVED`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`, `INVALID_APPOINTMENT_STATE`, `APPOINTMENT_CONFLICT`, `APPOINTMENT_OUTSIDE_AVAILABILITY`, `TIMEZONE_NOT_CONFIGURED`, `PROFESSIONAL_ARCHIVED`, `SERVICE_ARCHIVED`, `CUSTOMER_ARCHIVED`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -7893,7 +7893,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`, `INVALID_APPOINTMENT_STATE`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`, `INVALID_APPOINTMENT_STATE`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -8025,7 +8025,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`, `INVALID_APPOINTMENT_STATE`, `APPOINTMENT_COMPLETION_TOO_EARLY`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`, `INVALID_APPOINTMENT_STATE`, `APPOINTMENT_COMPLETION_TOO_EARLY`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -8159,7 +8159,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`, `INVALID_APPOINTMENT_STATE`, `APPOINTMENT_NO_SHOW_TOO_EARLY`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`, `INVALID_APPOINTMENT_STATE`, `APPOINTMENT_NO_SHOW_TOO_EARLY`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -8309,7 +8309,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`, `TIMEZONE_NOT_CONFIGURED`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`, `TIMEZONE_NOT_CONFIGURED`.",
             "content": {
               "application/json": {
                 "schema": {
