@@ -424,3 +424,29 @@ test("CONCURRENCY: two Orders concurrently confirming for the same product (7+7 
   const movements = await listMovements(org, product.id, { limit: 10 });
   assert.equal(movements.filter((m) => m.type === "ADJUSTMENT_OUT").length, 1, "exactly one movement — the loser never inserted one");
 });
+
+/**
+ * Readiness audit 2026-10-22 (P1-1): two Orders holding the same products in OPPOSITE item order, confirmed (then
+ * canceled) at the same time. Before the fix each transaction locked the stock rows in its own item order and 29/30
+ * rounds deadlocked (a 500 after ~1 s). Rows are now locked in one global order, so the second simply waits.
+ */
+test("CONCURRENCY: opposite item order — simultaneous confirms and cancels of two multi-product Orders never deadlock", async () => {
+  const { createMovement } = await import("../../src/modules/inventory/service.js");
+  for (let round = 0; round < 10; round++) {
+    const org = { organizationId: randomUUID() };
+    const a = await pricedProduct(org, "Produto A", "10.00");
+    const b = await pricedProduct(org, "Produto B", "10.00");
+    const c = await pricedProduct(org, "Produto C", "10.00");
+    for (const p of [a, b, c]) await createMovement(org, actor, "req-seed", p.id, { type: "RECEIPT", quantity: "100" });
+    const x = await createOrder(org, actor, "req-x", { items: [a, b, c].map((p) => ({ productId: p.id, quantity: "1" })) });
+    const y = await createOrder(org, actor, "req-y", { items: [c, b, a].map((p) => ({ productId: p.id, quantity: "2" })) });
+
+    const confirms = await Promise.allSettled([confirmOrder(org, actor, "req-x", x.id), confirmOrder(org, actor, "req-y", y.id)]);
+    assert.deepEqual(confirms.map((r) => r.status), ["fulfilled", "fulfilled"], `round ${round}: both confirmations succeed`);
+    for (const p of [a, b, c]) assert.equal((await getBalance(org, p.id))?.quantity, "97.000000");
+
+    const cancels = await Promise.allSettled([cancelOrder(org, actor, "req-x", x.id), cancelOrder(org, actor, "req-y", y.id)]);
+    assert.deepEqual(cancels.map((r) => r.status), ["fulfilled", "fulfilled"], `round ${round}: both cancellations succeed`);
+    for (const p of [a, b, c]) assert.equal((await getBalance(org, p.id))?.quantity, "100.000000");
+  }
+});

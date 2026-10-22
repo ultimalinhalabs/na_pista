@@ -53,6 +53,20 @@ export class NotFoundError extends AppError {
   }
 }
 
+/**
+ * Two transactions locked the same rows in a cycle (40P01) or a serializable transaction lost (40001): the
+ * database rolled this one back entirely, so the request can simply be repeated (readiness audit 2026-10-22).
+ */
+export class ConcurrentUpdateError extends AppError {
+  constructor(message = "A concurrent request changed the same data; nothing was applied — retry the request") {
+    super(409, "CONCURRENT_UPDATE", message);
+  }
+}
+
+export function isSerializationFailureError(error: unknown): boolean {
+  return extractErrorCode(error) === "40001";
+}
+
 export class ConflictError extends AppError {
   constructor(message = "Conflicting resource state") {
     super(409, "CONFLICT", message);

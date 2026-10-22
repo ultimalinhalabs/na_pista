@@ -169,7 +169,7 @@ function errorResponses(op: Operation) {
     ["FORBIDDEN", ...(gate ? ["ENTITLEMENT_REQUIRED"] : [])],
   );
   if (hasResource || op.notFound?.length) out["404"] = errorResponse("Not found in this organization.", ["NOT_FOUND", ...(op.notFound ?? [])]);
-  if (isMutation || op.conflicts?.length) out["409"] = errorResponse("Conflicts with the current state.", ["CONFLICT", ...(op.conflicts ?? [])]);
+  if (isMutation || op.conflicts?.length) out["409"] = errorResponse("Conflicts with the current state.", ["CONFLICT", "CONCURRENT_UPDATE", ...(op.conflicts ?? [])]);
   if (op.body) out["413"] = errorResponse("Request body too large.", ["PAYLOAD_TOO_LARGE"]);
   out["503"] = errorResponse("A required dependency (UL Platform or Na Pista's database) is unavailable. Retry later.", ["UPSTREAM_UNAVAILABLE"]);
   out["500"] = errorResponse("Unexpected error. Report the X-Request-ID.", ["INTERNAL_ERROR"]);

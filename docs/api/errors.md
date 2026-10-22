@@ -24,6 +24,7 @@ Every error has the same shape and a stable `code`:
 | 403 | `ENTITLEMENT_REQUIRED` | Na Pista not enabled for the organization | Subscription issue |
 | 404 | `NOT_FOUND` | Resource not found **in this organization** (other organizations' ids look identical), or unknown route | — |
 | 409 | `CONFLICT` | Conflicts with current state (e.g. duplicate) | Re-read, then decide |
+| 409 | `CONCURRENT_UPDATE` | A simultaneous request changed the same data and the database rolled this one back entirely (nothing was applied) | Retry the same request (short backoff) |
 | 413 | `PAYLOAD_TOO_LARGE` | Body over the server limit (100 kB) | Send less |
 | 503 | `UPSTREAM_UNAVAILABLE` | The UL Platform or Na Pista's database is unreachable, or the organization's Platform credential is missing/revoked | Retry later with backoff; reads are safe to retry |
 | 500 | `INTERNAL_ERROR` | Unexpected | Report the `X-Request-ID` |
@@ -56,6 +57,7 @@ ciphertext or anything about encryption. Driver details are logged server-side o
 ## Retrying
 
 - `503`: retry with exponential backoff. Reads are always safe to retry.
+- `409 CONCURRENT_UPDATE`: nothing was applied — retrying the same request is safe.
 - State transitions (`confirm`, `cancel`, `complete`, `no-show`) are single atomic operations: a retry of one that
   already succeeded returns `409 INVALID_…_STATE` instead of applying twice — re-read the resource.
 - Creations (`POST` of a new resource) are **not** idempotent today; there is no `Idempotency-Key`. After a timeout,
