@@ -156,7 +156,7 @@ test("identity cache: 15 s — one Platform call inside the window; a revocation
 });
 
 test("service-to-service: valid key resolves; a key of a suspended organization → ORGANIZATION_SUSPENDED; scoped to its own organization", async () => {
-  responses.set("svc:ulk_ok", { status: 200, body: { data: { apiKeyId: "k1", application: "QUALE_A_DICA", organizationId: ORG_A, scopes: ["catalog.read"], credentialClass: "ORGANIZATION" } } });
+  responses.set("svc:ulk_ok", { status: 200, body: { data: { apiKeyId: "k1", application: "NA_PISTA", organizationId: ORG_A, scopes: ["catalog.read"], credentialClass: "ORGANIZATION" } } });
   responses.set("svc:ulk_susp", { status: 403, body: { error: { code: "ORGANIZATION_SUSPENDED", message: "suspended" } } });
   svc._clearServiceIdentityCache();
   const identity = await svc.introspectServiceCredential("ulk_ok");
@@ -174,4 +174,11 @@ test("service-to-service: valid key resolves; a key of a suspended organization 
   };
   assert.equal(run(ORG_A).error, undefined);
   assert.equal(run(ORG_B).error?.statusCode, 403, "a key never crosses into another organization");
+  // Credentials audit 2026-10-23: a key issued for another application is never a Na Pista credential.
+  const otherApp = { params: { organizationId: ORG_A }, service: { ...identity, application: "QUALE_A_DICA" } } as unknown as Request;
+  let otherError: { statusCode?: number } | undefined;
+  tenant.requireTenantContext()(otherApp, {} as Response, (err?: unknown) => {
+    otherError = err as typeof otherError;
+  });
+  assert.equal(otherError?.statusCode, 403, "a QUALE_A_DICA key is refused on its own organization's Na Pista path");
 });

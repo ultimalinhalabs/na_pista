@@ -1664,7 +1664,7 @@
         ],
         "summary": "Create a customer",
         "x-na-pista-permission": "customers.create",
-        "x-na-pista-scope": "catalog.write",
+        "x-na-pista-scope": "customer.write",
         "x-na-pista-capability": "customers.enabled",
         "parameters": [
           {
@@ -1809,7 +1809,7 @@
         ],
         "summary": "List customers",
         "x-na-pista-permission": "customers.read",
-        "x-na-pista-scope": "catalog.read",
+        "x-na-pista-scope": "customer.read",
         "x-na-pista-capability": "customers.enabled",
         "parameters": [
           {
@@ -1993,7 +1993,7 @@
         ],
         "summary": "Get a customer",
         "x-na-pista-permission": "customers.read",
-        "x-na-pista-scope": "catalog.read",
+        "x-na-pista-scope": "customer.read",
         "x-na-pista-capability": "customers.enabled",
         "parameters": [
           {
@@ -2103,7 +2103,7 @@
         ],
         "summary": "Update a customer",
         "x-na-pista-permission": "customers.update",
-        "x-na-pista-scope": "catalog.write",
+        "x-na-pista-scope": "customer.write",
         "x-na-pista-capability": "customers.enabled",
         "parameters": [
           {
@@ -2293,7 +2293,7 @@
         "summary": "Archive a customer",
         "description": "Archives (never physically deletes) and returns the archived customer.",
         "x-na-pista-permission": "customers.delete",
-        "x-na-pista-scope": "catalog.write",
+        "x-na-pista-scope": "customer.write",
         "x-na-pista-capability": "customers.enabled",
         "parameters": [
           {
@@ -3025,7 +3025,7 @@
         "summary": "Create a draft order",
         "description": "Prices, totals, currency and status are always derived by the server.",
         "x-na-pista-permission": "orders.create",
-        "x-na-pista-scope": "catalog.write",
+        "x-na-pista-scope": "order.write",
         "x-na-pista-capability": "orders.enabled",
         "parameters": [
           {
@@ -3188,7 +3188,7 @@
         "summary": "List orders",
         "description": "List view — items are not included; fetch the order for its items.",
         "x-na-pista-permission": "orders.read",
-        "x-na-pista-scope": "catalog.read",
+        "x-na-pista-scope": "order.read",
         "x-na-pista-capability": "orders.enabled",
         "parameters": [
           {
@@ -3372,7 +3372,7 @@
         ],
         "summary": "Get an order with its items",
         "x-na-pista-permission": "orders.read",
-        "x-na-pista-scope": "catalog.read",
+        "x-na-pista-scope": "order.read",
         "x-na-pista-capability": "orders.enabled",
         "parameters": [
           {
@@ -3482,7 +3482,7 @@
         ],
         "summary": "Update a draft order",
         "x-na-pista-permission": "orders.update",
-        "x-na-pista-scope": "catalog.write",
+        "x-na-pista-scope": "order.write",
         "x-na-pista-capability": "orders.enabled",
         "parameters": [
           {
@@ -3638,7 +3638,7 @@
         ],
         "summary": "Add an item to a draft order",
         "x-na-pista-permission": "orders.update",
-        "x-na-pista-scope": "catalog.write",
+        "x-na-pista-scope": "order.write",
         "x-na-pista-capability": "orders.enabled",
         "parameters": [
           {
@@ -3797,7 +3797,7 @@
         ],
         "summary": "Change an item's quantity",
         "x-na-pista-permission": "orders.update",
-        "x-na-pista-scope": "catalog.write",
+        "x-na-pista-scope": "order.write",
         "x-na-pista-capability": "orders.enabled",
         "parameters": [
           {
@@ -3958,7 +3958,7 @@
         ],
         "summary": "Remove an item from a draft order",
         "x-na-pista-permission": "orders.update",
-        "x-na-pista-scope": "catalog.write",
+        "x-na-pista-scope": "order.write",
         "x-na-pista-capability": "orders.enabled",
         "parameters": [
           {
@@ -4090,7 +4090,7 @@
         "summary": "Confirm an order (DRAFT → CONFIRMED)",
         "description": "Atomically decreases stock for every item; nothing partially commits.",
         "x-na-pista-permission": "orders.update",
-        "x-na-pista-scope": "catalog.write",
+        "x-na-pista-scope": "order.write",
         "x-na-pista-capability": "orders.enabled",
         "parameters": [
           {
@@ -4213,7 +4213,7 @@
         "summary": "Cancel an order",
         "description": "From CONFIRMED, returns exactly the stock the order consumed.",
         "x-na-pista-permission": "orders.update",
-        "x-na-pista-scope": "catalog.write",
+        "x-na-pista-scope": "order.write",
         "x-na-pista-capability": "orders.enabled",
         "parameters": [
           {
@@ -4335,7 +4335,7 @@
         ],
         "summary": "Complete an order (CONFIRMED → COMPLETED)",
         "x-na-pista-permission": "orders.update",
-        "x-na-pista-scope": "catalog.write",
+        "x-na-pista-scope": "order.write",
         "x-na-pista-capability": "orders.enabled",
         "parameters": [
           {
@@ -7174,7 +7174,7 @@
         "summary": "Book an appointment",
         "description": "End time is derived from the service duration; the start must be a bookable slot.",
         "x-na-pista-permission": "appointments.create",
-        "x-na-pista-scope": "catalog.write",
+        "x-na-pista-scope": "appointment.write",
         "x-na-pista-capability": "services.enabled",
         "parameters": [
           {
@@ -7325,7 +7325,7 @@
         "summary": "List appointments in a date range",
         "description": "`from`/`to` are required organization-local dates, at most 31 days apart.",
         "x-na-pista-permission": "appointments.read",
-        "x-na-pista-scope": "catalog.read",
+        "x-na-pista-scope": "appointment.read",
         "x-na-pista-capability": "services.enabled",
         "parameters": [
           {
@@ -7519,7 +7519,7 @@
         ],
         "summary": "Get an appointment",
         "x-na-pista-permission": "appointments.read",
-        "x-na-pista-scope": "catalog.read",
+        "x-na-pista-scope": "appointment.read",
         "x-na-pista-capability": "services.enabled",
         "parameters": [
           {
@@ -7629,7 +7629,7 @@
         ],
         "summary": "Reschedule or edit an appointment",
         "x-na-pista-permission": "appointments.update",
-        "x-na-pista-scope": "catalog.write",
+        "x-na-pista-scope": "appointment.write",
         "x-na-pista-capability": "services.enabled",
         "parameters": [
           {
@@ -7793,7 +7793,7 @@
         ],
         "summary": "Cancel an appointment",
         "x-na-pista-permission": "appointments.update",
-        "x-na-pista-scope": "catalog.write",
+        "x-na-pista-scope": "appointment.write",
         "x-na-pista-capability": "services.enabled",
         "parameters": [
           {
@@ -7943,7 +7943,7 @@
         ],
         "summary": "Complete an appointment",
         "x-na-pista-permission": "appointments.update",
-        "x-na-pista-scope": "catalog.write",
+        "x-na-pista-scope": "appointment.write",
         "x-na-pista-capability": "services.enabled",
         "parameters": [
           {
@@ -8065,7 +8065,7 @@
         ],
         "summary": "Mark an appointment as a no-show",
         "x-na-pista-permission": "appointments.update",
-        "x-na-pista-scope": "catalog.write",
+        "x-na-pista-scope": "appointment.write",
         "x-na-pista-capability": "services.enabled",
         "parameters": [
           {

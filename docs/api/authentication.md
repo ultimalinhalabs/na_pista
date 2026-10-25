@@ -15,7 +15,7 @@ Na Pista never verifies a secret itself: both kinds of token are checked by the 
 | --- | --- | --- |
 | Token | UL Platform user access token (Supabase Auth JWT), obtained by signing in through a UL application | `ulk_…` key issued by the UL Platform for **one** organization and the `NA_PISTA` application |
 | Who is it for | Your staff using your interface | Your server, a back-office job, another system |
-| What it may do | What the user's **role** in the organization allows (OWNER, ADMIN, MANAGER, STAFF) | What the key's **scopes** allow: `catalog.read` (reads), `catalog.write` (mutations) |
+| What it may do | What the user's **role** in the organization allows (OWNER, ADMIN, MANAGER, STAFF) | What the key's **scopes** allow (table below). A key issued for another application (e.g. `QUALE_A_DICA`) is refused |
 | Where it must live | The user's browser/app session | **Server-side only.** Never ship a `ulk_` key to a browser or mobile app |
 
 Do not use a person's session as a long-lived integration credential, and do not use an integration key to act as
@@ -32,6 +32,19 @@ Content-Type: application/json
 
 { "applicationKey": "NA_PISTA", "scopes": ["catalog.read", "catalog.write"] }
 ```
+
+Request only the scopes the integration needs (ADR-072):
+
+| Scope | Allows |
+|---|---|
+| `catalog.read` / `catalog.write` | Products, categories, services, professionals, schedules, settings, stock; free bookable slots (read) |
+| `customer.read` / `customer.write` | Customers (personal data) |
+| `order.read` / `order.write` | Orders (create, edit items, confirm, cancel, complete) |
+| `appointment.read` / `appointment.write` | Appointments (book, reschedule, cancel, complete, no-show) |
+
+Transition: a NA_PISTA key issued before the personal-data scopes existed (holding only `catalog.*`) is still accepted
+on customers, orders and appointments while the deployment runs with `NA_PISTA_LEGACY_CATALOG_SCOPES=accept`; each such
+use is logged once per key. Re-issue the key with the scopes above before strict mode (`refuse`).
 
 The secret is returned **once**, in that response. Store it in your server's secret store. Revoke it on the Platform
 (`POST …/api-keys/{keyId}/revoke`) when no longer needed or if it may have leaked.

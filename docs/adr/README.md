@@ -65,3 +65,4 @@ e [`../decisions.md`](../decisions.md) (F19 — todas fechadas com evidência de
 | [056](ADR-056-platform-credential-status.md) | Platform Credential Status Contract | Accepted — implemented (F30) | F30 |
 | [057](ADR-057-webhook-visibility.md) | Webhook Visibility (Platform-owned; documentation only) | Accepted — implemented (F30) | F30 |
 | [070](ADR-070-module-entitlements.md) | One Entitlement per Module (supersedes ADR-022 key reuse) | Accepted — implemented locally | Audit 2026-10-20 |
+| [072](ADR-072-service-credential-application-and-scopes.md) | Service credentials: NA_PISTA keys only, per-resource scopes for personal data | Accepted — implemented locally | Credentials audit 2026-10-23 |
