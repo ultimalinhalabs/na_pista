@@ -42,9 +42,8 @@ Request only the scopes the integration needs (ADR-072):
 | `order.read` / `order.write` | Orders (create, edit items, confirm, cancel, complete) |
 | `appointment.read` / `appointment.write` | Appointments (book, reschedule, cancel, complete, no-show) |
 
-Transition: a NA_PISTA key issued before the personal-data scopes existed (holding only `catalog.*`) is still accepted
-on customers, orders and appointments while the deployment runs with `NA_PISTA_LEGACY_CATALOG_SCOPES=accept`; each such
-use is logged once per key. Re-issue the key with the scopes above before strict mode (`refuse`).
+`catalog.*` does **not** give access to customers, orders or appointments. A key issued before these scopes existed
+must be re-issued with the scopes above.
 
 The secret is returned **once**, in that response. Store it in your server's secret store. Revoke it on the Platform
 (`POST …/api-keys/{keyId}/revoke`) when no longer needed or if it may have leaked.

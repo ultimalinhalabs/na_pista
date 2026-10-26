@@ -4,8 +4,9 @@
  * bookable slots carry no personal data, so they stay on `catalog.read` (a booking interface needs them).
  *
  * TRANSITION: a key issued before these scopes existed holds only `catalog.*`. While
- * NA_PISTA_LEGACY_CATALOG_SCOPES=accept (the default), such a NA_PISTA key is still accepted on these routes and
- * the use is logged once per key and scope (`service.legacy_scope_used`); `refuse` is the strict mode. Keys of any
+ * NA_PISTA_LEGACY_CATALOG_SCOPES=refuse (the default since the production inventory of 2026-10-26 showed no
+ * key depends on it) such a key is refused on these routes; `accept` is an emergency switch that admits it again and
+ * logs the use once per key and scope (`service.legacy_scope_used`). Keys of any
  * other application are refused before this point (tenancy/tenantContext.ts).
  */
 export const SERVICE_SCOPES = {

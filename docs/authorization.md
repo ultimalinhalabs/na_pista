@@ -76,7 +76,7 @@ impõe-na a operação (e o UL Client/documentação) até haver mecanismo (OD-1
 ### 3.2 Scopes e módulos (vocabulário em OD-14; estado atual em ADR-072, 2026-10-23)
 > **ADR-072:** o desenho abaixo não tinha sido seguido — o código mapeava tudo para `catalog.*`. Desde ADR-072: só
 > chaves da aplicação `NA_PISTA`; `customer.*`, `order.*`, `appointment.*` para dados pessoais (UL migração 0032);
-> `catalog.*` para o resto; transição com `NA_PISTA_LEGACY_CATALOG_SCOPES`.
+> `catalog.*` para o resto; estrito por omissão (`NA_PISTA_LEGACY_CATALOG_SCOPES=refuse`; `accept` só como interruptor de emergência).
 
 Scopes existentes na allowlist `NA_PISTA` (desenho original): `catalog.read`, `catalog.write`, `customer.read`.
 - `catalog.read` → GET de `products`, `categories`, `services`; `catalog.write` → escrita nos mesmos.
