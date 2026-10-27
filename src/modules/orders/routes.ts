@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { requireModule } from "../../middleware/requireCapability.js";
+import { serviceScopeFor } from "../../authorization/serviceScopes.js";
 import { requireAuthorized } from "../../middleware/requireAuthorized.js";
 import { requireTenantContext } from "../../tenancy/tenantContext.js";
 import { actorFromRequest } from "../../tenancy/actor.js";
@@ -28,7 +29,7 @@ const GATE = [requireTenantContext(), requireModule("orders")] as const;
 ordersRouter.post(
   "/organizations/:organizationId/orders",
   ...GATE,
-  requireAuthorized("orders.create", "catalog.write"),
+  requireAuthorized("orders.create", serviceScopeFor("orders.create", "write")),
   async (req, res, next) => {
     try {
       const body = parseBody(createOrderSchema, req.body);
@@ -43,7 +44,7 @@ ordersRouter.post(
 ordersRouter.get(
   "/organizations/:organizationId/orders",
   ...GATE,
-  requireAuthorized("orders.read", "catalog.read"),
+  requireAuthorized("orders.read", serviceScopeFor("orders.read", "read")),
   async (req, res, next) => {
     try {
       const query = parseQuery(listOrdersQuerySchema, req.query);
@@ -57,7 +58,7 @@ ordersRouter.get(
 ordersRouter.get(
   "/organizations/:organizationId/orders/:orderId",
   ...GATE,
-  requireAuthorized("orders.read", "catalog.read"),
+  requireAuthorized("orders.read", serviceScopeFor("orders.read", "read")),
   async (req, res, next) => {
     try {
       const order = await getOrderOrThrow(req.tenant!, paramString(req.params.orderId)!);
@@ -72,7 +73,7 @@ ordersRouter.get(
 ordersRouter.patch(
   "/organizations/:organizationId/orders/:orderId",
   ...GATE,
-  requireAuthorized("orders.update", "catalog.write"),
+  requireAuthorized("orders.update", serviceScopeFor("orders.update", "write")),
   async (req, res, next) => {
     try {
       const body = parseBody(updateOrderSchema, req.body);
@@ -87,7 +88,7 @@ ordersRouter.patch(
 ordersRouter.post(
   "/organizations/:organizationId/orders/:orderId/items",
   ...GATE,
-  requireAuthorized("orders.update", "catalog.write"),
+  requireAuthorized("orders.update", serviceScopeFor("orders.update", "write")),
   async (req, res, next) => {
     try {
       const body = parseBody(addOrderItemSchema, req.body);
@@ -102,7 +103,7 @@ ordersRouter.post(
 ordersRouter.patch(
   "/organizations/:organizationId/orders/:orderId/items/:itemId",
   ...GATE,
-  requireAuthorized("orders.update", "catalog.write"),
+  requireAuthorized("orders.update", serviceScopeFor("orders.update", "write")),
   async (req, res, next) => {
     try {
       const body = parseBody(updateOrderItemSchema, req.body);
@@ -124,7 +125,7 @@ ordersRouter.patch(
 ordersRouter.delete(
   "/organizations/:organizationId/orders/:orderId/items/:itemId",
   ...GATE,
-  requireAuthorized("orders.update", "catalog.write"),
+  requireAuthorized("orders.update", serviceScopeFor("orders.update", "write")),
   async (req, res, next) => {
     try {
       const order = await removeOrderItemOrThrow(req.tenant!, actorFromRequest(req), req.requestId, paramString(req.params.orderId)!, paramString(req.params.itemId)!);
@@ -141,7 +142,7 @@ ordersRouter.delete(
 ordersRouter.post(
   "/organizations/:organizationId/orders/:orderId/confirm",
   ...GATE,
-  requireAuthorized("orders.update", "catalog.write"),
+  requireAuthorized("orders.update", serviceScopeFor("orders.update", "write")),
   async (req, res, next) => {
     try {
       const order = await confirmOrder(req.tenant!, actorFromRequest(req), req.requestId, paramString(req.params.orderId)!);
@@ -155,7 +156,7 @@ ordersRouter.post(
 ordersRouter.post(
   "/organizations/:organizationId/orders/:orderId/cancel",
   ...GATE,
-  requireAuthorized("orders.update", "catalog.write"),
+  requireAuthorized("orders.update", serviceScopeFor("orders.update", "write")),
   async (req, res, next) => {
     try {
       const order = await cancelOrder(req.tenant!, actorFromRequest(req), req.requestId, paramString(req.params.orderId)!);
@@ -169,7 +170,7 @@ ordersRouter.post(
 ordersRouter.post(
   "/organizations/:organizationId/orders/:orderId/complete",
   ...GATE,
-  requireAuthorized("orders.update", "catalog.write"),
+  requireAuthorized("orders.update", serviceScopeFor("orders.update", "write")),
   async (req, res, next) => {
     try {
       const order = await completeOrder(req.tenant!, actorFromRequest(req), req.requestId, paramString(req.params.orderId)!);

@@ -1,3 +1,4 @@
+import { serviceScopeFor } from "../authorization/serviceScopes.js";
 import type { z } from "zod";
 import {
   cancelAppointmentSchema,
@@ -120,8 +121,8 @@ export function capabilityOf(op: Operation): string | null {
   if (!key) throw new Error(`No module entitlement mapped for tag "${op.tag}"`);
   return key;
 }
-const read = (permission: string) => ({ permission, scope: "catalog.read" });
-const write = (permission: string) => ({ permission, scope: "catalog.write" });
+const read = (permission: string) => ({ permission, scope: serviceScopeFor(permission, "read") });
+const write = (permission: string) => ({ permission, scope: serviceScopeFor(permission, "write") });
 
 export const operations: Operation[] = [
   // ------------------------------------------------------------- platform
@@ -244,7 +245,7 @@ export const operations: Operation[] = [
   { method: "post", path: `${ORG}/appointments/:appointmentId/cancel`, tag: "Appointments", summary: "Cancel an appointment", auth: write("appointments.update"), body: cancelAppointmentSchema, notFound: ["APPOINTMENT_NOT_FOUND"], conflicts: ["INVALID_APPOINTMENT_STATE"], success: { status: 200, kind: "data", schema: AppointmentSchema } },
   { method: "post", path: `${ORG}/appointments/:appointmentId/complete`, tag: "Appointments", summary: "Complete an appointment", auth: write("appointments.update"), notFound: ["APPOINTMENT_NOT_FOUND"], conflicts: ["INVALID_APPOINTMENT_STATE", "APPOINTMENT_COMPLETION_TOO_EARLY"], success: { status: 200, kind: "data", schema: AppointmentSchema } },
   { method: "post", path: `${ORG}/appointments/:appointmentId/no-show`, tag: "Appointments", summary: "Mark an appointment as a no-show", auth: write("appointments.update"), body: noShowAppointmentSchema, notFound: ["APPOINTMENT_NOT_FOUND"], conflicts: ["INVALID_APPOINTMENT_STATE", "APPOINTMENT_NO_SHOW_TOO_EARLY"], success: { status: 200, kind: "data", schema: AppointmentSchema } },
-  { method: "get", path: `${ORG}/professionals/:professionalId/bookable-slots`, tag: "Appointments", summary: "List bookable start times for a service on a date", auth: read("appointments.read"), query: bookableSlotsQuerySchema, conflicts: ["TIMEZONE_NOT_CONFIGURED"], success: { status: 200, kind: "data", schema: BookableSlotsSchema } },
+  { method: "get", path: `${ORG}/professionals/:professionalId/bookable-slots`, tag: "Appointments", summary: "List bookable start times for a service on a date", auth: { permission: "appointments.read", scope: "catalog.read" }, query: bookableSlotsQuerySchema, conflicts: ["TIMEZONE_NOT_CONFIGURED"], success: { status: 200, kind: "data", schema: BookableSlotsSchema } },
 
   // ------------------------------------------------------- integration (F30)
   {

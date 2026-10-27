@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { requireModule } from "../../middleware/requireCapability.js";
+import { SERVICE_SCOPES, serviceScopeFor } from "../../authorization/serviceScopes.js";
 import { requireAuthorized } from "../../middleware/requireAuthorized.js";
 import { requireTenantContext } from "../../tenancy/tenantContext.js";
 import { actorFromRequest } from "../../tenancy/actor.js";
@@ -30,7 +31,7 @@ validateUuidParams(appointmentsRouter);
 
 const GATE = [requireTenantContext(), requireModule("services")] as const;
 
-appointmentsRouter.post("/organizations/:organizationId/appointments", ...GATE, requireAuthorized("appointments.create", "catalog.write"), async (req, res, next) => {
+appointmentsRouter.post("/organizations/:organizationId/appointments", ...GATE, requireAuthorized("appointments.create", serviceScopeFor("appointments.create", "write")), async (req, res, next) => {
   try {
     const body = parseBody(createAppointmentSchema, req.body);
     const appointment = await createAppointment(req.tenant!, actorFromRequest(req), req.requestId, body);
@@ -40,7 +41,7 @@ appointmentsRouter.post("/organizations/:organizationId/appointments", ...GATE, 
   }
 });
 
-appointmentsRouter.get("/organizations/:organizationId/appointments", ...GATE, requireAuthorized("appointments.read", "catalog.read"), async (req, res, next) => {
+appointmentsRouter.get("/organizations/:organizationId/appointments", ...GATE, requireAuthorized("appointments.read", serviceScopeFor("appointments.read", "read")), async (req, res, next) => {
   try {
     const query = parseQuery(listAppointmentsQuerySchema, req.query);
     okPage(res, await listAppointmentsPage(req.tenant!, query));
@@ -52,7 +53,7 @@ appointmentsRouter.get("/organizations/:organizationId/appointments", ...GATE, r
 appointmentsRouter.get(
   "/organizations/:organizationId/appointments/:appointmentId",
   ...GATE,
-  requireAuthorized("appointments.read", "catalog.read"),
+  requireAuthorized("appointments.read", serviceScopeFor("appointments.read", "read")),
   async (req, res, next) => {
     try {
       ok(res, await getAppointmentOrThrow(req.tenant!, paramString(req.params.appointmentId)!));
@@ -65,7 +66,7 @@ appointmentsRouter.get(
 appointmentsRouter.patch(
   "/organizations/:organizationId/appointments/:appointmentId",
   ...GATE,
-  requireAuthorized("appointments.update", "catalog.write"),
+  requireAuthorized("appointments.update", serviceScopeFor("appointments.update", "write")),
   async (req, res, next) => {
     try {
       const body = parseBody(updateAppointmentSchema, req.body);
@@ -79,7 +80,7 @@ appointmentsRouter.patch(
 appointmentsRouter.post(
   "/organizations/:organizationId/appointments/:appointmentId/cancel",
   ...GATE,
-  requireAuthorized("appointments.update", "catalog.write"),
+  requireAuthorized("appointments.update", serviceScopeFor("appointments.update", "write")),
   async (req, res, next) => {
     try {
       const body = parseBody(cancelAppointmentSchema, req.body ?? {});
@@ -93,7 +94,7 @@ appointmentsRouter.post(
 appointmentsRouter.post(
   "/organizations/:organizationId/appointments/:appointmentId/complete",
   ...GATE,
-  requireAuthorized("appointments.update", "catalog.write"),
+  requireAuthorized("appointments.update", serviceScopeFor("appointments.update", "write")),
   async (req, res, next) => {
     try {
       ok(res, await completeAppointment(req.tenant!, actorFromRequest(req), req.requestId, paramString(req.params.appointmentId)!));
@@ -107,7 +108,7 @@ appointmentsRouter.post(
 appointmentsRouter.post(
   "/organizations/:organizationId/appointments/:appointmentId/no-show",
   ...GATE,
-  requireAuthorized("appointments.update", "catalog.write"),
+  requireAuthorized("appointments.update", serviceScopeFor("appointments.update", "write")),
   async (req, res, next) => {
     try {
       parseBody(noShowAppointmentSchema, req.body ?? {});
@@ -122,7 +123,7 @@ appointmentsRouter.post(
 appointmentsRouter.get(
   "/organizations/:organizationId/professionals/:professionalId/bookable-slots",
   ...GATE,
-  requireAuthorized("appointments.read", "catalog.read"),
+  requireAuthorized("appointments.read", SERVICE_SCOPES.catalogRead /* free slots: no personal data */),
   async (req, res, next) => {
     try {
       const query = parseQuery(bookableSlotsQuerySchema, req.query);

@@ -33,6 +33,12 @@ export function requireTenantContext(paramName = "organizationId") {
     if (!organizationId) return next(new ForbiddenError(`Missing :${paramName} route parameter`));
 
     if (req.service) {
+      // Credentials audit 2026-10-23: a key is an organization's integration WITH one application (UL api_keys
+      // semantics). A key issued for another application (e.g. QUALE_A_DICA, FOI) is never a Na Pista credential,
+      // whatever its scopes are called. Read from the introspection Na Pista already does — no extra call.
+      if (req.service.application !== "NA_PISTA") {
+        return next(new ForbiddenError("This credential was issued for another application"));
+      }
       if (req.service.organizationId !== organizationId) {
         return next(new ForbiddenError("This credential is not scoped to this organization"));
       }

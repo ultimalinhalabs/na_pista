@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { requireModule } from "../../middleware/requireCapability.js";
+import { serviceScopeFor } from "../../authorization/serviceScopes.js";
 import { requireAuthorized } from "../../middleware/requireAuthorized.js";
 import { requireTenantContext } from "../../tenancy/tenantContext.js";
 import { actorFromRequest } from "../../tenancy/actor.js";
@@ -22,7 +23,7 @@ const GATE = [requireTenantContext(), requireModule("customers")] as const;
 customersRouter.post(
   "/organizations/:organizationId/customers",
   ...GATE,
-  requireAuthorized("customers.create", "catalog.write"),
+  requireAuthorized("customers.create", serviceScopeFor("customers.create", "write")),
   async (req, res, next) => {
     try {
       const body = parseBody(createCustomerSchema, req.body);
@@ -37,7 +38,7 @@ customersRouter.post(
 customersRouter.get(
   "/organizations/:organizationId/customers",
   ...GATE,
-  requireAuthorized("customers.read", "catalog.read"),
+  requireAuthorized("customers.read", serviceScopeFor("customers.read", "read")),
   async (req, res, next) => {
     try {
       const query = parseQuery(listCustomersQuerySchema, req.query);
@@ -51,7 +52,7 @@ customersRouter.get(
 customersRouter.get(
   "/organizations/:organizationId/customers/:customerId",
   ...GATE,
-  requireAuthorized("customers.read", "catalog.read"),
+  requireAuthorized("customers.read", serviceScopeFor("customers.read", "read")),
   async (req, res, next) => {
     try {
       const customer = await getCustomerOrThrow(req.tenant!, paramString(req.params.customerId)!);
@@ -65,7 +66,7 @@ customersRouter.get(
 customersRouter.patch(
   "/organizations/:organizationId/customers/:customerId",
   ...GATE,
-  requireAuthorized("customers.update", "catalog.write"),
+  requireAuthorized("customers.update", serviceScopeFor("customers.update", "write")),
   async (req, res, next) => {
     try {
       const body = parseBody(updateCustomerSchema, req.body);
@@ -87,7 +88,7 @@ customersRouter.patch(
 customersRouter.delete(
   "/organizations/:organizationId/customers/:customerId",
   ...GATE,
-  requireAuthorized("customers.delete", "catalog.write"),
+  requireAuthorized("customers.delete", serviceScopeFor("customers.delete", "write")),
   async (req, res, next) => {
     try {
       const customer = await archiveCustomer(req.tenant!, actorFromRequest(req), req.requestId, paramString(req.params.customerId)!);

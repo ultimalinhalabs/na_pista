@@ -57,6 +57,13 @@ const schema = z
      * (GET /v1/internal/cron/reconcile-provisioning). Unset → the route does not exist. A deployment secret.
      */
     CRON_SECRET: z.preprocess((v) => (v === "" ? undefined : v), z.string().min(16).optional()),
+    /**
+     * Credentials audit 2026-10-23 — transition to per-resource scopes (authorization/serviceScopes.ts). Default
+     * `refuse` (strict): the production inventory of 2026-10-26 found no key relying on `catalog.*` for personal data.
+     * `accept` is an emergency switch only — a NA_PISTA key holding only `catalog.*` would again reach customers,
+     * orders and appointments (logged once per key and scope). Keys of other applications are refused either way.
+     */
+    NA_PISTA_LEGACY_CATALOG_SCOPES: z.enum(["accept", "refuse"]).default("refuse"),
   })
   .superRefine((value, ctx) => {
     if (value.NODE_ENV === "production" && !value.NA_PISTA_CREDENTIAL_ENCRYPTION_KEY) {
