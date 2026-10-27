@@ -1675,6 +1675,17 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Required for service credentials, optional for users. 1–200 visible ASCII characters, unique per intent. Repeating the same request with the same key returns the resource created the first time (header `Idempotent-Replayed: true`) without creating it again; the same key with a different request → 409 `IDEMPOTENCY_KEY_REUSED`.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
           }
         ],
         "requestBody": {
@@ -1731,7 +1742,7 @@
             }
           },
           "400": {
-            "description": "Invalid input (see `error.details`). Codes: `VALIDATION_ERROR`.",
+            "description": "Invalid input (see `error.details`). Codes: `VALIDATION_ERROR`, `IDEMPOTENCY_KEY_REQUIRED`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1761,7 +1772,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`, `IDEMPOTENCY_KEY_REUSED`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2877,6 +2888,17 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Required for service credentials, optional for users. 1–200 visible ASCII characters, unique per intent. Repeating the same request with the same key returns the resource created the first time (header `Idempotent-Replayed: true`) without creating it again; the same key with a different request → 409 `IDEMPOTENCY_KEY_REUSED`.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
           }
         ],
         "requestBody": {
@@ -2934,7 +2956,7 @@
             }
           },
           "400": {
-            "description": "Invalid input (see `error.details`). Codes: `VALIDATION_ERROR`.",
+            "description": "Invalid input (see `error.details`). Codes: `VALIDATION_ERROR`, `IDEMPOTENCY_KEY_REQUIRED`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2974,7 +2996,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`, `INSUFFICIENT_STOCK`, `PRODUCT_ARCHIVED`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`, `IDEMPOTENCY_KEY_REUSED`, `INSUFFICIENT_STOCK`, `PRODUCT_ARCHIVED`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3035,6 +3057,17 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Required for service credentials, optional for users. 1–200 visible ASCII characters, unique per intent. Repeating the same request with the same key returns the resource created the first time (header `Idempotent-Replayed: true`) without creating it again; the same key with a different request → 409 `IDEMPOTENCY_KEY_REUSED`.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
             }
           }
         ],
@@ -3099,7 +3132,7 @@
             }
           },
           "400": {
-            "description": "Invalid input (see `error.details`). Codes: `VALIDATION_ERROR`.",
+            "description": "Invalid input (see `error.details`). Codes: `VALIDATION_ERROR`, `IDEMPOTENCY_KEY_REQUIRED`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3139,7 +3172,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`, `PRODUCT_ARCHIVED`, `PRODUCT_PRICE_REQUIRED`, `CUSTOMER_ARCHIVED`.",
+            "description": "Conflicts with the current state. Codes: `CONFLICT`, `CONCURRENT_UPDATE`, `IDEMPOTENCY_KEY_REUSED`, `PRODUCT_ARCHIVED`, `PRODUCT_PRICE_REQUIRED`, `CUSTOMER_ARCHIVED`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -10262,7 +10295,8 @@
             "enum": [
               "body",
               "query",
-              "path"
+              "path",
+              "header"
             ]
           },
           "path": {

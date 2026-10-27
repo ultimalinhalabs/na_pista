@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import assert from "node:assert/strict";
 import test, { after, before } from "node:test";
 import { call, createProduct, loadF22Fixtures, registerF22Credentials, startApp } from "./inventoryHelpers.js";
@@ -66,6 +67,7 @@ test("a service credential with sufficient scope (catalog.write) can record a mo
   const res = await call(ctx.base, "POST", `/organizations/${fixtures.orgA.id}/inventory/${product.id}/movements`, {
     token: fixtures.apiKeys.integrationA.secret,
     body: { type: "RECEIPT", quantity: 6 },
+    headers: { "idempotency-key": randomUUID() }, // ADR-073: required for service credentials
   });
   assert.equal(res.status, 201);
 });

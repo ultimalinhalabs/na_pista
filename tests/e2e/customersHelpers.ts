@@ -43,10 +43,10 @@ export function registerF21Credentials(fixtures: F21Fixtures) {
   // credential provisioned" fails closed too, same as F19/F20.
 }
 
-export async function call(base: string, method: string, path: string, opts: { token?: string; body?: unknown } = {}) {
+export async function call(base: string, method: string, path: string, opts: { token?: string; body?: unknown; headers?: Record<string, string> } = {}) {
   const res = await fetch(`${base}${path}`, {
     method,
-    headers: { "content-type": "application/json", ...(opts.token ? { authorization: `Bearer ${opts.token}` } : {}) },
+    headers: { "content-type": "application/json", ...(opts.token ? { authorization: `Bearer ${opts.token}` } : {}), ...opts.headers },
     body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
   });
   const json = (await res.json().catch(() => undefined)) as { data?: any; error?: any } | undefined;

@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import assert from "node:assert/strict";
 import test, { after, before } from "node:test";
 import { call, createProduct, loadF23Fixtures, registerF23Credentials, startApp } from "./ordersHelpers.js";
@@ -69,6 +70,7 @@ test("28: a service credential with sufficient scope (catalog.write) can create 
   const create = await call(ctx.base, "POST", `/organizations/${fixtures.orgA.id}/orders`, {
     token: fixtures.apiKeys.integrationA.secret,
     body: { items: [{ productId: product.id, quantity: 1 }] },
+    headers: { "idempotency-key": randomUUID() }, // ADR-073: required for service credentials
   });
   assert.equal(create.status, 201);
   assert.equal(create.data.organizationId, fixtures.orgA.id);

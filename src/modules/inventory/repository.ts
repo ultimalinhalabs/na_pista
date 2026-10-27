@@ -194,6 +194,23 @@ export async function insertMovement(
   return row! as MovementRow;
 }
 
+/** ADR-073 replay: one movement by id, scoped to the organization. */
+export async function getMovement(tenant: TenantContext, id: string, executor: Executor = db): Promise<MovementRow | undefined> {
+  assertTenant(tenant);
+  const [row] = await executor.select().from(stockMovements).where(and(eq(stockMovements.organizationId, tenant.organizationId), eq(stockMovements.id, id)));
+  return row as MovementRow | undefined;
+}
+
+/** ADR-073 replay: the product's current balance row (no product join — same shape `createMovement` returns). */
+export async function getBalanceRow(tenant: TenantContext, productId: string, executor: Executor = db): Promise<BalanceRow | undefined> {
+  assertTenant(tenant);
+  const [row] = await executor
+    .select()
+    .from(inventoryBalances)
+    .where(and(eq(inventoryBalances.organizationId, tenant.organizationId), eq(inventoryBalances.productId, productId)));
+  return row as BalanceRow | undefined;
+}
+
 const movementConditions = (tenant: TenantContext, productId: string) =>
   and(eq(stockMovements.organizationId, tenant.organizationId), eq(stockMovements.productId, productId));
 

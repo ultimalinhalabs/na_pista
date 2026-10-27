@@ -33,6 +33,9 @@ Content-Type: application/json
 { "applicationKey": "NA_PISTA", "scopes": ["catalog.read", "catalog.write"] }
 ```
 
+Service credentials must send an `Idempotency-Key` header when they create orders, customers or stock movements
+(ADR-073; see [errors.md](errors.md#retrying)).
+
 Request only the scopes the integration needs (ADR-072):
 
 | Scope | Allows |

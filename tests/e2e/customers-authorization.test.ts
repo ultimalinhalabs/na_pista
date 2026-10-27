@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import assert from "node:assert/strict";
 import test, { after, before } from "node:test";
 import { call, loadF21Fixtures, registerF21Credentials, startApp } from "./customersHelpers.js";
@@ -70,6 +71,7 @@ test("a service credential with sufficient scope (catalog.write) can create a cu
   const res = await call(ctx.base, "POST", `/organizations/${fixtures.orgA.id}/customers`, {
     token: fixtures.apiKeys.integrationA.secret,
     body: { name: "Service-created Customer" },
+    headers: { "idempotency-key": randomUUID() }, // ADR-073: required for service credentials
   });
   assert.equal(res.status, 201);
   assert.equal(res.data.organizationId, fixtures.orgA.id);

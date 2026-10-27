@@ -95,6 +95,8 @@ export interface Operation {
   notFound?: string[];
   /** Extra 400 codes beyond VALIDATION_ERROR. */
   badRequest?: string[];
+  /** ADR-073: accepts an `Idempotency-Key` header (required for service credentials). */
+  idempotency?: true;
 }
 
 const ORG = "/organizations/:organizationId";
@@ -177,7 +179,7 @@ export const operations: Operation[] = [
   { method: "delete", path: `${ORG}/products/:productId`, tag: "Products", summary: "Archive a product", description: "Archives (never physically deletes) and returns the archived product.", auth: write("products.delete"), success: { status: 200, kind: "data", schema: ProductSchema } },
 
   // ------------------------------------------------------------ customers
-  { method: "post", path: `${ORG}/customers`, tag: "Customers", summary: "Create a customer", auth: write("customers.create"), body: createCustomerSchema, success: { status: 201, kind: "data", schema: CustomerSchema } },
+  { method: "post", path: `${ORG}/customers`, tag: "Customers", summary: "Create a customer", auth: write("customers.create"), body: createCustomerSchema, idempotency: true, success: { status: 201, kind: "data", schema: CustomerSchema } },
   { method: "get", path: `${ORG}/customers`, tag: "Customers", summary: "List customers", auth: read("customers.read"), query: listCustomersQuerySchema, success: { status: 200, kind: "page", schema: CustomerSchema } },
   { method: "get", path: `${ORG}/customers/:customerId`, tag: "Customers", summary: "Get a customer", auth: read("customers.read"), success: { status: 200, kind: "data", schema: CustomerSchema } },
   { method: "patch", path: `${ORG}/customers/:customerId`, tag: "Customers", summary: "Update a customer", auth: write("customers.update"), body: updateCustomerSchema, success: { status: 200, kind: "data", schema: CustomerSchema } },
@@ -195,13 +197,14 @@ export const operations: Operation[] = [
     description: "The permission depends on the body: `RECEIPT` needs `inventory.create`; `ADJUSTMENT_IN`/`ADJUSTMENT_OUT` need `inventory.update`. The balance only ever changes through a movement.",
     auth: { permission: ["inventory.create", "inventory.update"], scope: "catalog.write" },
     body: createMovementSchema,
+    idempotency: true,
     notFound: ["PRODUCT_NOT_FOUND", "INVENTORY_NOT_FOUND"],
     conflicts: ["INSUFFICIENT_STOCK", "PRODUCT_ARCHIVED"],
     success: { status: 201, kind: "data", schema: StockMovementResultSchema },
   },
 
   // --------------------------------------------------------------- orders
-  { method: "post", path: `${ORG}/orders`, tag: "Orders", summary: "Create a draft order", description: "Prices, totals, currency and status are always derived by the server.", auth: write("orders.create"), body: createOrderSchema, notFound: ["PRODUCT_NOT_FOUND"], conflicts: ["PRODUCT_ARCHIVED", "PRODUCT_PRICE_REQUIRED", "CUSTOMER_ARCHIVED"], success: { status: 201, kind: "data", schema: OrderDetailSchema } },
+  { method: "post", path: `${ORG}/orders`, tag: "Orders", summary: "Create a draft order", description: "Prices, totals, currency and status are always derived by the server.", auth: write("orders.create"), body: createOrderSchema, idempotency: true, notFound: ["PRODUCT_NOT_FOUND"], conflicts: ["PRODUCT_ARCHIVED", "PRODUCT_PRICE_REQUIRED", "CUSTOMER_ARCHIVED"], success: { status: 201, kind: "data", schema: OrderDetailSchema } },
   { method: "get", path: `${ORG}/orders`, tag: "Orders", summary: "List orders", description: "List view — items are not included; fetch the order for its items.", auth: read("orders.read"), query: listOrdersQuerySchema, success: { status: 200, kind: "page", schema: OrderSchema } },
   { method: "get", path: `${ORG}/orders/:orderId`, tag: "Orders", summary: "Get an order with its items", auth: read("orders.read"), notFound: ["ORDER_NOT_FOUND"], success: { status: 200, kind: "data", schema: OrderDetailSchema } },
   { method: "patch", path: `${ORG}/orders/:orderId`, tag: "Orders", summary: "Update a draft order", auth: write("orders.update"), body: updateOrderSchema, notFound: ["ORDER_NOT_FOUND"], conflicts: ["INVALID_ORDER_STATE", "CUSTOMER_ARCHIVED"], success: { status: 200, kind: "data", schema: OrderDetailSchema } },

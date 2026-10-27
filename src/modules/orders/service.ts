@@ -35,6 +35,7 @@ import {
 } from "./repository.js";
 import { ORDERS_DEFAULT_PAGE_SIZE, type ListOrdersQuery } from "./schemas.js";
 import { pageRequest, type Page } from "../../shared/listing.js";
+import { runIdempotent, type IdempotencyRequest } from "../idempotency/service.js";
 
 type OrderItem = Awaited<ReturnType<typeof listOrders>>[number];
 
@@ -102,43 +103,69 @@ export async function createOrder(
   requestId: string | undefined,
   input: { customerId?: string; items: { productId: string; quantity: string }[] },
 ) {
-  const result = await db.transaction(async (tx) => {
-    if (input.customerId) {
-      await resolveOrderableCustomer(tenant, input.customerId, tx);
-    }
+  return (await createOrderIdempotent(tenant, actor, requestId, input, undefined)).result;
+}
 
-    const order = await insertOrder(tenant, { customerId: input.customerId ?? null, currency: DEFAULT_CURRENCY }, tx);
+/** ADR-073: `createOrder` with an optional Idempotency-Key (the route passes it; a replay never records usage again). */
+export async function createOrderIdempotent(
+  tenant: TenantContext,
+  actor: Actor,
+  requestId: string | undefined,
+  input: { customerId?: string; items: { productId: string; quantity: string }[] },
+  idempotency: IdempotencyRequest | undefined,
+) {
+  const outcome = await runIdempotent(
+    { organizationId: tenant.organizationId, actor },
+    idempotency,
+    (tx) => createOrderInTx(tenant, actor, requestId, input, tx),
+    (order) => order.id,
+    (id) => getOrderOrThrow(tenant, id),
+  );
+  if (!outcome.replayed) {
+    await recordUsage(tenant.organizationId, `order.created:${outcome.result.id}`, { resourceType: "order", resourceId: outcome.result.id }, requestId);
+  }
+  return outcome;
+}
 
-    for (const item of input.items) {
-      const product = await resolveOrderableProduct(tenant, item.productId, tx);
-      await insertOrderItem(
-        tenant,
-        { orderId: order.id, productId: product.id, productName: product.name, unitPrice: product.price!, quantity: item.quantity },
-        tx,
-      );
-    }
+async function createOrderInTx(
+  tenant: TenantContext,
+  actor: Actor,
+  requestId: string | undefined,
+  input: { customerId?: string; items: { productId: string; quantity: string }[] },
+  tx: Tx,
+) {
+  if (input.customerId) {
+    await resolveOrderableCustomer(tenant, input.customerId, tx);
+  }
 
-    const finalOrder = input.items.length > 0 ? await recalculateOrderTotals(tenant, order.id, tx) : order;
+  const order = await insertOrder(tenant, { customerId: input.customerId ?? null, currency: DEFAULT_CURRENCY }, tx);
 
-    await recordAuditEvent(
-      {
-        organizationId: tenant.organizationId,
-        actorType: actor.type,
-        actorId: actor.id,
-        action: "order.created",
-        resourceType: "order",
-        resourceId: order.id,
-        metadata: { itemCount: input.items.length, customerId: input.customerId ?? null },
-        requestId,
-      },
+  for (const item of input.items) {
+    const product = await resolveOrderableProduct(tenant, item.productId, tx);
+    await insertOrderItem(
+      tenant,
+      { orderId: order.id, productId: product.id, productName: product.name, unitPrice: product.price!, quantity: item.quantity },
       tx,
     );
+  }
 
-    return withItems(tenant, finalOrder, tx);
-  });
+  const finalOrder = input.items.length > 0 ? await recalculateOrderTotals(tenant, order.id, tx) : order;
 
-  await recordUsage(tenant.organizationId, `order.created:${result.id}`, { resourceType: "order", resourceId: result.id }, requestId);
-  return result;
+  await recordAuditEvent(
+    {
+      organizationId: tenant.organizationId,
+      actorType: actor.type,
+      actorId: actor.id,
+      action: "order.created",
+      resourceType: "order",
+      resourceId: order.id,
+      metadata: { itemCount: input.items.length, customerId: input.customerId ?? null },
+      requestId,
+    },
+    tx,
+  );
+
+  return withItems(tenant, finalOrder, tx);
 }
 
 export async function listAllOrders(tenant: TenantContext, filters: OrderFilters) {

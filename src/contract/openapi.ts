@@ -162,22 +162,33 @@ function errorResponses(op: Operation) {
   const hasResource = /:(?!organizationId)\w+/.test(op.path);
   const gate = op.auth.capabilityGate !== false;
   const out: Record<string, unknown> = {};
-  if (hasInput) out["400"] = errorResponse("Invalid input (see `error.details`).", ["VALIDATION_ERROR", ...(op.badRequest ?? [])]);
+  const idem = op.idempotency === true;
+  if (hasInput) out["400"] = errorResponse("Invalid input (see `error.details`).", ["VALIDATION_ERROR", ...(idem ? ["IDEMPOTENCY_KEY_REQUIRED"] : []), ...(op.badRequest ?? [])]);
   out["401"] = errorResponse("Missing, malformed, expired or rejected credentials.", ["UNAUTHORIZED"]);
   out["403"] = errorResponse(
     "Not a member of / not scoped to this organization, missing permission or scope" + (gate ? ", or capability not enabled." : "."),
     ["FORBIDDEN", ...(gate ? ["ENTITLEMENT_REQUIRED"] : [])],
   );
   if (hasResource || op.notFound?.length) out["404"] = errorResponse("Not found in this organization.", ["NOT_FOUND", ...(op.notFound ?? [])]);
-  if (isMutation || op.conflicts?.length) out["409"] = errorResponse("Conflicts with the current state.", ["CONFLICT", "CONCURRENT_UPDATE", ...(op.conflicts ?? [])]);
+  if (isMutation || op.conflicts?.length) out["409"] = errorResponse("Conflicts with the current state.", ["CONFLICT", "CONCURRENT_UPDATE", ...(idem ? ["IDEMPOTENCY_KEY_REUSED"] : []), ...(op.conflicts ?? [])]);
   if (op.body) out["413"] = errorResponse("Request body too large.", ["PAYLOAD_TOO_LARGE"]);
   out["503"] = errorResponse("A required dependency (UL Platform or Na Pista's database) is unavailable. Retry later.", ["UPSTREAM_UNAVAILABLE"]);
   out["500"] = errorResponse("Unexpected error. Report the X-Request-ID.", ["INTERNAL_ERROR"]);
   return out;
 }
 
+/** ADR-073: the same key + the same request → the same resource (201 + `Idempotent-Replayed: true`), written once. */
+const IDEMPOTENCY_KEY_PARAMETER = {
+  name: "Idempotency-Key",
+  in: "header",
+  required: false,
+  description:
+    "Required for service credentials, optional for users. 1–200 visible ASCII characters, unique per intent. Repeating the same request with the same key returns the resource created the first time (header `Idempotent-Replayed: true`) without creating it again; the same key with a different request → 409 `IDEMPOTENCY_KEY_REUSED`.",
+  schema: { type: "string", minLength: 1, maxLength: 200 },
+};
+
 function operationObject(op: Operation, idOf: Map<z.ZodType, string>) {
-  const parameters = [...pathParameters(op.path), ...(op.query ? queryParameters(op.query) : [])];
+  const parameters = [...pathParameters(op.path), ...(op.query ? queryParameters(op.query) : []), ...(op.idempotency ? [IDEMPOTENCY_KEY_PARAMETER] : [])];
   const auth = op.auth;
   const permission = auth === "public" ? undefined : auth.permission;
   return {

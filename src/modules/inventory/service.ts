@@ -9,6 +9,8 @@ import {
   countMovements,
   decreaseBalance,
   getBalance,
+  getBalanceRow,
+  getMovement,
   increaseBalance,
   insertMovement,
   listBalances,
@@ -19,6 +21,7 @@ import {
   type MovementRow,
   type TenantContext,
 } from "./repository.js";
+import { runIdempotent, type IdempotencyRequest } from "../idempotency/service.js";
 import { INVENTORY_DEFAULT_PAGE_SIZE, MOVEMENTS_DEFAULT_PAGE_SIZE, type ListInventoryQuery, type ListMovementsQuery } from "./schemas.js";
 
 export interface Actor {
@@ -166,4 +169,36 @@ export async function createMovement(
   const result = await db.transaction(run);
   await recordUsage(tenant.organizationId, `inventory.movement:${result.movement.id}`, { resourceType: "inventory_movement", resourceId: result.movement.id }, requestId);
   return result;
+}
+
+/**
+ * ADR-073: a standalone stock movement with an optional Idempotency-Key — a retried RECEIPT can no longer be
+ * counted twice. Same transaction and checks as `createMovement`; a replay re-reads the movement and the current
+ * balance and records no usage.
+ */
+export async function createMovementIdempotent(
+  tenant: TenantContext,
+  actor: Actor,
+  requestId: string | undefined,
+  productId: string,
+  input: { type: MovementType; quantity: string; reason?: string },
+  idempotency: IdempotencyRequest | undefined,
+) {
+  const outcome = await runIdempotent(
+    { organizationId: tenant.organizationId, actor },
+    idempotency,
+    (tx) => createMovement(tenant, actor, requestId, productId, input, tx),
+    (result) => result.movement.id,
+    async (movementId) => {
+      const movement = await getMovement(tenant, movementId);
+      const balance = movement ? await getBalanceRow(tenant, movement.productId) : undefined;
+      if (!movement || !balance) throw new InventoryNotFoundError();
+      return { balance, movement };
+    },
+  );
+  if (!outcome.replayed) {
+    const id = outcome.result.movement.id;
+    await recordUsage(tenant.organizationId, `inventory.movement:${id}`, { resourceType: "inventory_movement", resourceId: id }, requestId);
+  }
+  return outcome;
 }

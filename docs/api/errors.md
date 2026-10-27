@@ -18,12 +18,14 @@ Every error has the same shape and a stable `code`:
 
 | Status | Code | Meaning | What to do |
 | --- | --- | --- | --- |
-| 400 | `VALIDATION_ERROR` | Malformed JSON, unknown/invalid field or query parameter, malformed id in the path | Fix the request (see `details`) |
+| 400 | `VALIDATION_ERROR` | Malformed JSON, unknown/invalid field or query parameter, malformed id in the path, malformed `Idempotency-Key` header | Fix the request (see `details`) |
+| 400 | `IDEMPOTENCY_KEY_REQUIRED` | A service credential called a creating endpoint (orders, customers, stock movements) without `Idempotency-Key` | Send a key, unique per intent |
 | 401 | `UNAUTHORIZED` | Missing, malformed, expired or rejected token | Re-authenticate |
 | 403 | `FORBIDDEN` | Not a member / credential not for this organization / missing permission or scope | Do not retry |
 | 403 | `ENTITLEMENT_REQUIRED` | Na Pista not enabled for the organization | Subscription issue |
 | 404 | `NOT_FOUND` | Resource not found **in this organization** (other organizations' ids look identical), or unknown route | — |
 | 409 | `CONFLICT` | Conflicts with current state (e.g. duplicate) | Re-read, then decide |
+| 409 | `IDEMPOTENCY_KEY_REUSED` | This `Idempotency-Key` was already used by you for a **different** request | Use a new key for a new intent |
 | 409 | `CONCURRENT_UPDATE` | A simultaneous request changed the same data and the database rolled this one back entirely (nothing was applied) | Retry the same request (short backoff) |
 | 413 | `PAYLOAD_TOO_LARGE` | Body over the server limit (100 kB) | Send less |
 | 503 | `UPSTREAM_UNAVAILABLE` | The UL Platform or Na Pista's database is unreachable, or the organization's Platform credential is missing/revoked | Retry later with backoff; reads are safe to retry |
@@ -60,6 +62,11 @@ ciphertext or anything about encryption. Driver details are logged server-side o
 - `409 CONCURRENT_UPDATE`: nothing was applied — retrying the same request is safe.
 - State transitions (`confirm`, `cancel`, `complete`, `no-show`) are single atomic operations: a retry of one that
   already succeeded returns `409 INVALID_…_STATE` instead of applying twice — re-read the resource.
-- Creations (`POST` of a new resource) are **not** idempotent today; there is no `Idempotency-Key`. After a timeout,
-  list/search before creating again.
+- Creating an order, a customer or a stock movement accepts an `Idempotency-Key` header (ADR-073; **required for
+  service credentials**). Repeat the same request with the same key after a timeout or a network error: you get the
+  resource created the first time (`201`, header `Idempotent-Replayed: true`) and nothing is created or applied
+  twice. A key is scoped to the organization and to the caller (user or credential). A request that failed (4xx)
+  did not use the key up: retry it once the cause is fixed.
+- Other creations (products, categories, services, professionals, appointments) have no `Idempotency-Key` yet: after
+  a timeout, list/search before creating again. Appointments are protected against double booking by the database.
 - Rate limiting: none in Na Pista today (the Platform may rate-limit its own endpoints).
