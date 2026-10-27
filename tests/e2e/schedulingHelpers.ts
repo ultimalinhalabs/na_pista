@@ -3,6 +3,7 @@ import type { Server } from "node:http";
 import { fileURLToPath } from "node:url";
 import { buildApp } from "../../src/app.js";
 import { registerServiceCredential } from "../../src/platform/serviceAuth.js";
+import type { FreshOrg } from "./helpers.js";
 
 export interface F26Fixtures {
   platformBaseUrl: string;
@@ -12,6 +13,7 @@ export interface F26Fixtures {
   staffA: { id: string; token: string };
   managerA: { id: string; token: string };
   apiKeys: Record<"platformFacingA" | "integrationA" | "platformFacingB", { keyId: string; secret: string; scopes: string[] }>;
+  freshOrgs: FreshOrg[];
 }
 
 const fixturesPath = fileURLToPath(new URL("../../.fixtures/f26-fixtures.json", import.meta.url));

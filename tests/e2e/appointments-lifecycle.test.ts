@@ -219,7 +219,7 @@ test("invalid / archived resources: unknown service 404; archived Service, Profe
 });
 
 test("timezone not configured (fresh subscribed org) -> 409 TIMEZONE_NOT_CONFIGURED on create, list and bookable slots", async () => {
-  const org = await createFreshSubscribedOrg(fixtures);
+  const org = await createFreshSubscribedOrg(fixtures, 0);
   const seed = await seedBookable(ctx.base, org.id, org.ownerToken, "E2E NoTz");
   const create = await call(ctx.base, "POST", `/organizations/${org.id}/appointments`, { token: org.ownerToken, body: bookBody(seed, at("09:00")) });
   assert.equal(create.status, 409);

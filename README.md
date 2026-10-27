@@ -226,9 +226,14 @@ npm run dev                 # API em :4200
 # testes (precisam de um UL Platform local já a correr em :4000)
 npm run test:unit
 npm run test:integration    # BD local/descartável — os testes recusam qualquer BD remota
-cd ../ul-platform && npm run f20:provision && npm run f21:provision && npm run f22:provision && npm run f23:provision && npm run f24:provision && npm run f25:provision && npm run f26:provision   # fixtures reais
+cd ../ul-platform && for n in 20 21 22 23 24 25 26 27; do npm run f$n:provision; done && npx tsx scripts/module-entitlements-provision-fixtures.ts   # fixtures reais
 cd ../na-pista && npm run test:e2e
 ```
+
+As fixtures criam as subscrições pelo serviço da UL (os planos não são self-service desde `ul-platform 1590646`) e
+deixam prontas as organizações "novas" que alguns testes usam (`freshOrgs`). Esses testes alteram-nas (fuso horário),
+por isso **volte a correr o aprovisionamento antes de cada execução** da suite e2e. Uma BD Postgres simples precisa de
+`create schema extensions` antes das migrações (o Supabase já o tem).
 
 UI: ver [`../na-pista-console`](../na-pista-console).
 

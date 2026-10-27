@@ -6,7 +6,7 @@ import { call, loadFixtures, registerFixtureCredentials, startApp } from "./help
 /**
  * F20 brief §9/§28 scenarios 7-8: `catalog.enabled` gates the whole
  * module, live against the real Platform. Org D is used exclusively here
- * (subscribe/cancel/re-subscribe) — no other test file touches it.
+ * (revoke/re-grant access, then cancel) — no other test file touches it.
  */
 let ctx: Awaited<ReturnType<typeof startApp>>;
 const fixtures = loadFixtures();
@@ -39,15 +39,32 @@ test("entitlement disabled (no subscription at all) blocks Products and Categori
   assert.equal(afterCredential.error.code, "ENTITLEMENT_REQUIRED");
 });
 
-test("entitlement enabled (active subscription) allows Products; disabling then re-enabling it live toggles access", async () => {
-  // 1) org D starts subscribed -> allowed.
-  const before1 = await call(ctx.base, "POST", `/organizations/${fixtures.orgD.id}/products`, {
-    token: fixtures.orgD.ownerToken,
-    body: { name: "F20 Entitlement Probe D (before cancel)" },
-  });
-  assert.equal(before1.status, 201);
+test("entitlement enabled (active subscription) allows Products; revoking then re-granting access live toggles it; canceling ends it", async () => {
+  const probe = (label: string) =>
+    call(ctx.base, "POST", `/organizations/${fixtures.orgD.id}/products`, { token: fixtures.orgD.ownerToken, body: { name: `F20 Entitlement Probe D (${label})` } });
+  const access = (method: "PUT" | "DELETE") =>
+    fetch(`${fixtures.platformBaseUrl}/platform/organizations/${fixtures.orgD.id}/applications/NA_PISTA/access`, {
+      method,
+      headers: { authorization: `Bearer ${fixtures.platformAdmin.token}`, "content-type": "application/json" },
+    });
 
-  // 2) cancel the subscription for real, on the real Platform.
+  // 1) org D starts subscribed -> allowed.
+  assert.equal((await probe("before")).status, 201);
+
+  // 2) a platform admin revokes the application access for real -> blocked; re-grants it -> allowed again,
+  //    proving the gate is live in both directions, not a one-way switch.
+  assert.equal((await access("DELETE")).status, 200);
+  _clearEntitlementsCache();
+  const afterRevoke = await probe("should be blocked");
+  assert.equal(afterRevoke.status, 403);
+  assert.equal(afterRevoke.error.code, "ENTITLEMENT_REQUIRED");
+
+  assert.equal((await access("PUT")).status, 200);
+  _clearEntitlementsCache();
+  assert.equal((await probe("re-enabled")).status, 201);
+
+  // 3) the owner cancels the subscription for real -> blocked. Subscribing again is a contract (UL plans are not
+  //    self-service since ul-platform 1590646), so this direction is one-way here by design.
   const cancelRes = await fetch(`${fixtures.platformBaseUrl}/organizations/${fixtures.orgD.id}/subscriptions/${fixtures.orgD.subscriptionId}`, {
     method: "PATCH",
     headers: { authorization: `Bearer ${fixtures.orgD.ownerToken}`, "content-type": "application/json" },
@@ -55,28 +72,7 @@ test("entitlement enabled (active subscription) allows Products; disabling then 
   });
   assert.equal(cancelRes.status, 200);
   _clearEntitlementsCache();
-
-  const afterCancel = await call(ctx.base, "POST", `/organizations/${fixtures.orgD.id}/products`, {
-    token: fixtures.orgD.ownerToken,
-    body: { name: "F20 Entitlement Probe D (should be blocked)" },
-  });
+  const afterCancel = await probe("after cancel");
   assert.equal(afterCancel.status, 403);
   assert.equal(afterCancel.error.code, "ENTITLEMENT_REQUIRED");
-
-  // 3) re-subscribe (a NEW subscription — the canceled one stays canceled,
-  //    history preserved, exactly as ul-platform's own model requires) ->
-  //    access is restored, proving the gate is live, not a one-way switch.
-  const resubscribeRes = await fetch(`${fixtures.platformBaseUrl}/organizations/${fixtures.orgD.id}/subscriptions`, {
-    method: "POST",
-    headers: { authorization: `Bearer ${fixtures.orgD.ownerToken}`, "content-type": "application/json" },
-    body: JSON.stringify({ applicationKey: "NA_PISTA", planKey: "BUSINESS" }),
-  });
-  assert.equal(resubscribeRes.status, 201);
-  _clearEntitlementsCache();
-
-  const afterResubscribe = await call(ctx.base, "POST", `/organizations/${fixtures.orgD.id}/products`, {
-    token: fixtures.orgD.ownerToken,
-    body: { name: "F20 Entitlement Probe D (re-enabled)" },
-  });
-  assert.equal(afterResubscribe.status, 201);
 });
