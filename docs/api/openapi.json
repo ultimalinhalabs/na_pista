@@ -1663,8 +1663,12 @@
           "Customers"
         ],
         "summary": "Create a customer",
+        "description": "Service credentials: `customer.create` (create only — a customer-facing interface) or `customer.write`.",
         "x-na-pista-permission": "customers.create",
-        "x-na-pista-scope": "customer.write",
+        "x-na-pista-scope": [
+          "customer.create",
+          "customer.write"
+        ],
         "x-na-pista-capability": "customers.enabled",
         "parameters": [
           {
@@ -3045,9 +3049,12 @@
           "Orders"
         ],
         "summary": "Create a draft order",
-        "description": "Prices, totals, currency and status are always derived by the server.",
+        "description": "Prices, totals, currency and status are always derived by the server. Service credentials: `order.create` (create only — a customer-facing interface) or `order.write`.",
         "x-na-pista-permission": "orders.create",
-        "x-na-pista-scope": "order.write",
+        "x-na-pista-scope": [
+          "order.create",
+          "order.write"
+        ],
         "x-na-pista-capability": "orders.enabled",
         "parameters": [
           {
@@ -3404,8 +3411,12 @@
           "Orders"
         ],
         "summary": "Get an order with its items",
+        "description": "Service credentials: `order.read` reads any order of the organization; `order.create` alone reads back only the orders created by that same credential (any other id → 404).",
         "x-na-pista-permission": "orders.read",
-        "x-na-pista-scope": "order.read",
+        "x-na-pista-scope": [
+          "order.read",
+          "order.create"
+        ],
         "x-na-pista-capability": "orders.enabled",
         "parameters": [
           {

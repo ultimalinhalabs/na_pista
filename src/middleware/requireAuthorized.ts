@@ -30,7 +30,8 @@ export function serviceHasScope(
  * integration credential (scope) — two independent checks, never one
  * generic check bent to fit both.
  */
-export function requireAuthorized(permission: string, scope: string) {
+export function requireAuthorized(permission: string, scope: string | readonly string[]) {
+  const accepted = typeof scope === "string" ? [scope] : scope;
   return (req: Request, _res: Response, next: NextFunction) => {
     if (!req.tenant) return next(new UnauthorizedError());
 
@@ -42,12 +43,39 @@ export function requireAuthorized(permission: string, scope: string) {
     }
 
     if (req.tenant.actorType === "service") {
-      if (!req.service || !serviceHasScope({ apiKeyId: req.service.apiKeyId, scopes: req.tenant.scopes }, scope)) {
-        return next(new ForbiddenError(`Missing scope: ${scope}`));
+      const service = req.service;
+      if (!service || !accepted.some((s) => serviceHasScope({ apiKeyId: service.apiKeyId, scopes: req.tenant!.scopes }, s))) {
+        return next(new ForbiddenError(`Missing scope: ${accepted.join(" or ")}`));
       }
       return next();
     }
 
+    next(new UnauthorizedError());
+  };
+}
+
+/**
+ * Interface credential: a read a service key may make in full with `fullScope`, or — holding only `ownScope` — on the
+ * resources it created itself. Sets `res.locals.ownResourcesOnly` for the handler, which must then check ownership
+ * (and answer 404 for anything else, exactly like a resource of another organization). Humans: `permission`.
+ */
+export function requireReadOrOwn(permission: string, fullScope: string, ownScope: string) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.tenant) return next(new UnauthorizedError());
+    if (req.tenant.actorType === "human") {
+      if (!req.tenant.roleKey || !roleHasPermission(req.tenant.roleKey, permission)) return next(new ForbiddenError(`Missing permission: ${permission}`));
+      return next();
+    }
+    const service = req.service;
+    if (req.tenant.actorType === "service" && service) {
+      const scopes = { apiKeyId: service.apiKeyId, scopes: req.tenant.scopes };
+      if (serviceHasScope(scopes, fullScope)) return next();
+      if (serviceHasScope(scopes, ownScope)) {
+        res.locals.ownResourcesOnly = true;
+        return next();
+      }
+      return next(new ForbiddenError(`Missing scope: ${fullScope} or ${ownScope}`));
+    }
     next(new UnauthorizedError());
   };
 }

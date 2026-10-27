@@ -42,8 +42,14 @@ Request only the scopes the integration needs (ADR-072):
 |---|---|
 | `catalog.read` / `catalog.write` | Products, categories, services, professionals, schedules, settings, stock; free bookable slots (read) |
 | `customer.read` / `customer.write` | Customers (personal data) |
+| `customer.create` | Create customers only (no reading or changing them) |
 | `order.read` / `order.write` | Orders (create, edit items, confirm, cancel, complete) |
+| `order.create` | Create orders only; `GET …/orders/{orderId}` returns **only the orders created by this same key** (any other id → 404). No listing, no confirm/cancel |
 | `appointment.read` / `appointment.write` | Appointments (book, reschedule, cancel, complete, no-show) |
+
+**A customer-facing interface** (shop, booking page) keeps its key on its **own server** — never in the browser — with
+`catalog.read`, `customer.create` and `order.create` only: it shows the catalog, creates the buyer and the order (with an
+`Idempotency-Key`), and shows that order's status; the organization manages orders in the Console.
 
 `catalog.*` does **not** give access to customers, orders or appointments. A key issued before these scopes existed
 must be re-issued with the scopes above.

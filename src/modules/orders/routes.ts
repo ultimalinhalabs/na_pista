@@ -1,8 +1,9 @@
+import { OrderNotFoundError } from "../../shared/errors.js";
 import { Router } from "express";
 import { requireModule } from "../../middleware/requireCapability.js";
-import { idempotencyFor } from "../idempotency/service.js";
-import { serviceScopeFor } from "../../authorization/serviceScopes.js";
-import { requireAuthorized } from "../../middleware/requireAuthorized.js";
+import { createdByActor, idempotencyFor } from "../idempotency/service.js";
+import { SERVICE_SCOPES, serviceScopeFor } from "../../authorization/serviceScopes.js";
+import { requireAuthorized, requireReadOrOwn } from "../../middleware/requireAuthorized.js";
 import { requireTenantContext } from "../../tenancy/tenantContext.js";
 import { actorFromRequest } from "../../tenancy/actor.js";
 import { paramString, validateUuidParams } from "../../shared/params.js";
@@ -30,7 +31,8 @@ const GATE = [requireTenantContext(), requireModule("orders")] as const;
 ordersRouter.post(
   "/organizations/:organizationId/orders",
   ...GATE,
-  requireAuthorized("orders.create", serviceScopeFor("orders.create", "write")),
+  // Interface credential: `order.create` creates without confirming/canceling; `order.write` keeps doing everything.
+  requireAuthorized("orders.create", [SERVICE_SCOPES.orderCreate, serviceScopeFor("orders.create", "write")]),
   async (req, res, next) => {
     try {
       const body = parseBody(createOrderSchema, req.body);
@@ -61,10 +63,15 @@ ordersRouter.get(
 ordersRouter.get(
   "/organizations/:organizationId/orders/:orderId",
   ...GATE,
-  requireAuthorized("orders.read", serviceScopeFor("orders.read", "read")),
+  requireReadOrOwn("orders.read", SERVICE_SCOPES.orderRead, SERVICE_SCOPES.orderCreate),
   async (req, res, next) => {
     try {
-      const order = await getOrderOrThrow(req.tenant!, paramString(req.params.orderId)!);
+      const orderId = paramString(req.params.orderId)!;
+      // An `order.create`-only key reads back only the orders it created (404 otherwise, like another organization's).
+      if (res.locals.ownResourcesOnly && !(await createdByActor(req.tenant!.organizationId, actorFromRequest(req), "orders.create", orderId))) {
+        throw new OrderNotFoundError();
+      }
+      const order = await getOrderOrThrow(req.tenant!, orderId);
       ok(res, order);
     } catch (error) {
       next(error);

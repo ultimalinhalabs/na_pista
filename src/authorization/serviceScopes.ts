@@ -18,6 +18,9 @@ export const SERVICE_SCOPES = {
   orderWrite: "order.write",
   appointmentRead: "appointment.read",
   appointmentWrite: "appointment.write",
+  // Interface credential (UL migration 0033): create-only, for a customer-facing interface's server-side key.
+  orderCreate: "order.create",
+  customerCreate: "customer.create",
 } as const;
 
 /** Scope → the legacy scope still accepted for it during the transition. */
