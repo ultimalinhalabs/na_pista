@@ -75,8 +75,8 @@ export interface Operation {
     | {
         /** Human permission(s) (Na Pista role map). Several = chosen by the request (see description). */
         permission: string | string[];
-        /** Service-credential scope; null = human callers only. */
-        scope: string | null;
+        /** Service-credential scope; several = any one of them is enough; null = human callers only. */
+        scope: string | string[] | null;
         /** false = not behind a module entitlement gate (see `capabilityOf`). */
         capabilityGate?: boolean;
       };
@@ -179,7 +179,7 @@ export const operations: Operation[] = [
   { method: "delete", path: `${ORG}/products/:productId`, tag: "Products", summary: "Archive a product", description: "Archives (never physically deletes) and returns the archived product.", auth: write("products.delete"), success: { status: 200, kind: "data", schema: ProductSchema } },
 
   // ------------------------------------------------------------ customers
-  { method: "post", path: `${ORG}/customers`, tag: "Customers", summary: "Create a customer", auth: write("customers.create"), body: createCustomerSchema, idempotency: true, success: { status: 201, kind: "data", schema: CustomerSchema } },
+  { method: "post", path: `${ORG}/customers`, tag: "Customers", summary: "Create a customer", description: "Service credentials: `customer.create` (create only — a customer-facing interface) or `customer.write`.", auth: { permission: "customers.create", scope: ["customer.create", "customer.write"] }, body: createCustomerSchema, idempotency: true, success: { status: 201, kind: "data", schema: CustomerSchema } },
   { method: "get", path: `${ORG}/customers`, tag: "Customers", summary: "List customers", auth: read("customers.read"), query: listCustomersQuerySchema, success: { status: 200, kind: "page", schema: CustomerSchema } },
   { method: "get", path: `${ORG}/customers/:customerId`, tag: "Customers", summary: "Get a customer", auth: read("customers.read"), success: { status: 200, kind: "data", schema: CustomerSchema } },
   { method: "patch", path: `${ORG}/customers/:customerId`, tag: "Customers", summary: "Update a customer", auth: write("customers.update"), body: updateCustomerSchema, success: { status: 200, kind: "data", schema: CustomerSchema } },
@@ -204,9 +204,9 @@ export const operations: Operation[] = [
   },
 
   // --------------------------------------------------------------- orders
-  { method: "post", path: `${ORG}/orders`, tag: "Orders", summary: "Create a draft order", description: "Prices, totals, currency and status are always derived by the server.", auth: write("orders.create"), body: createOrderSchema, idempotency: true, notFound: ["PRODUCT_NOT_FOUND"], conflicts: ["PRODUCT_ARCHIVED", "PRODUCT_PRICE_REQUIRED", "CUSTOMER_ARCHIVED"], success: { status: 201, kind: "data", schema: OrderDetailSchema } },
+  { method: "post", path: `${ORG}/orders`, tag: "Orders", summary: "Create a draft order", description: "Prices, totals, currency and status are always derived by the server. Service credentials: `order.create` (create only — a customer-facing interface) or `order.write`.", auth: { permission: "orders.create", scope: ["order.create", "order.write"] }, body: createOrderSchema, idempotency: true, notFound: ["PRODUCT_NOT_FOUND"], conflicts: ["PRODUCT_ARCHIVED", "PRODUCT_PRICE_REQUIRED", "CUSTOMER_ARCHIVED"], success: { status: 201, kind: "data", schema: OrderDetailSchema } },
   { method: "get", path: `${ORG}/orders`, tag: "Orders", summary: "List orders", description: "List view — items are not included; fetch the order for its items.", auth: read("orders.read"), query: listOrdersQuerySchema, success: { status: 200, kind: "page", schema: OrderSchema } },
-  { method: "get", path: `${ORG}/orders/:orderId`, tag: "Orders", summary: "Get an order with its items", auth: read("orders.read"), notFound: ["ORDER_NOT_FOUND"], success: { status: 200, kind: "data", schema: OrderDetailSchema } },
+  { method: "get", path: `${ORG}/orders/:orderId`, tag: "Orders", summary: "Get an order with its items", description: "Service credentials: `order.read` reads any order of the organization; `order.create` alone reads back only the orders created by that same credential (any other id → 404).", auth: { permission: "orders.read", scope: ["order.read", "order.create"] }, notFound: ["ORDER_NOT_FOUND"], success: { status: 200, kind: "data", schema: OrderDetailSchema } },
   { method: "patch", path: `${ORG}/orders/:orderId`, tag: "Orders", summary: "Update a draft order", auth: write("orders.update"), body: updateOrderSchema, notFound: ["ORDER_NOT_FOUND"], conflicts: ["INVALID_ORDER_STATE", "CUSTOMER_ARCHIVED"], success: { status: 200, kind: "data", schema: OrderDetailSchema } },
   { method: "post", path: `${ORG}/orders/:orderId/items`, tag: "Orders", summary: "Add an item to a draft order", auth: write("orders.update"), body: addOrderItemSchema, notFound: ["ORDER_NOT_FOUND", "PRODUCT_NOT_FOUND"], conflicts: ["INVALID_ORDER_STATE", "PRODUCT_ARCHIVED", "PRODUCT_PRICE_REQUIRED"], success: { status: 201, kind: "data", schema: OrderDetailSchema } },
   { method: "patch", path: `${ORG}/orders/:orderId/items/:itemId`, tag: "Orders", summary: "Change an item's quantity", auth: write("orders.update"), body: updateOrderItemSchema, notFound: ["ORDER_NOT_FOUND"], conflicts: ["INVALID_ORDER_STATE"], success: { status: 200, kind: "data", schema: OrderDetailSchema } },

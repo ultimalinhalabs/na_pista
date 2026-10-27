@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { idempotencyFor } from "../idempotency/service.js";
 import { requireModule } from "../../middleware/requireCapability.js";
-import { serviceScopeFor } from "../../authorization/serviceScopes.js";
+import { SERVICE_SCOPES, serviceScopeFor } from "../../authorization/serviceScopes.js";
 import { requireAuthorized } from "../../middleware/requireAuthorized.js";
 import { requireTenantContext } from "../../tenancy/tenantContext.js";
 import { actorFromRequest } from "../../tenancy/actor.js";
@@ -24,7 +24,8 @@ const GATE = [requireTenantContext(), requireModule("customers")] as const;
 customersRouter.post(
   "/organizations/:organizationId/customers",
   ...GATE,
-  requireAuthorized("customers.create", serviceScopeFor("customers.create", "write")),
+  // Interface credential: `customer.create` creates without reading; `customer.write` keeps doing everything.
+  requireAuthorized("customers.create", [SERVICE_SCOPES.customerCreate, serviceScopeFor("customers.create", "write")]),
   async (req, res, next) => {
     try {
       const body = parseBody(createCustomerSchema, req.body);

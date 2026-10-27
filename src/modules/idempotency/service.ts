@@ -52,6 +52,28 @@ export function idempotencyFor(req: Request, operation: string, payload: unknown
 }
 
 /**
+ * Interface credential: did this actor create this resource? Every service-credential create carries an
+ * Idempotency-Key (required), so the key row records the creator. Used to let an `order.create`-only key read back
+ * only its own orders. Keep idempotency rows at least as long as such reads are expected (no purge exists yet).
+ */
+export async function createdByActor(organizationId: string, actor: { type: "user" | "service"; id: string }, operation: string, resourceId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: idempotencyKeys.id })
+    .from(idempotencyKeys)
+    .where(
+      and(
+        eq(idempotencyKeys.organizationId, organizationId),
+        eq(idempotencyKeys.actorType, actor.type),
+        eq(idempotencyKeys.actorId, actor.id),
+        eq(idempotencyKeys.operation, operation),
+        eq(idempotencyKeys.resourceId, resourceId),
+      ),
+    )
+    .limit(1);
+  return Boolean(row);
+}
+
+/**
  * Runs `execute` in one transaction. With a key: claims it first (unique per organization + actor + key); a key
  * already bound to the same request replays `replay(resourceId)` without writing anything; bound to a different
  * request → 409 IDEMPOTENCY_KEY_REUSED. A failed `execute` rolls the claim back with everything else.

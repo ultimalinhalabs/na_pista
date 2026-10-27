@@ -76,3 +76,37 @@ test("requireAuthorized over a NA_PISTA tenant: new scope 200, missing scope 403
   assert.equal(status(run(requireAuthorized("customers.read", "customer.read"), { service: svc, tenant })), 403);
   assert.equal(status(run(requireAuthorized("customers.read", "customer.read"), { tenant: { organizationId, actorType: "human", roleKey: "OWNER", userId: "u" } })), 200);
 });
+
+/** Interface credential (UL 0033): create-only scopes + own-order read. */
+test("interface scopes: order.create / customer.create create; either alternative satisfies requireAuthorized", async () => {
+  const { requireReadOrOwn } = await import("../../src/middleware/requireAuthorized.js");
+  const organizationId = randomUUID();
+  const iface = key("NA_PISTA", organizationId, ["catalog.read", "customer.create", "order.create"]);
+  const tenant = { organizationId, actorType: "service" as const, scopes: iface.scopes };
+  assert.equal(status(run(requireAuthorized("orders.create", ["order.create", "order.write"]), { service: iface, tenant })), 200);
+  assert.equal(status(run(requireAuthorized("customers.create", ["customer.create", "customer.write"]), { service: iface, tenant })), 200);
+  assert.equal(status(run(requireAuthorized("orders.update", "order.write"), { service: iface, tenant })), 403, "no confirm/cancel/edit");
+  assert.equal(status(run(requireAuthorized("orders.read", "order.read"), { service: iface, tenant })), 403, "no listing");
+  assert.equal(status(run(requireAuthorized("customers.read", "customer.read"), { service: iface, tenant })), 403, "no reading customers");
+
+  const locals = (r: { locals?: Record<string, unknown> }) => r.locals ?? {};
+  const resOwn = { locals: {} as Record<string, unknown> };
+  let out: unknown;
+  requireReadOrOwn("orders.read", "order.read", "order.create")({ service: iface, tenant } as unknown as Request, resOwn as unknown as Response, (e?: unknown) => (out = e ?? "next"));
+  assert.equal(out, "next");
+  assert.equal(locals(resOwn).ownResourcesOnly, true, "order.create alone → own orders only");
+
+  const full = key("NA_PISTA", organizationId, ["order.read"]);
+  const resFull = { locals: {} as Record<string, unknown> };
+  requireReadOrOwn("orders.read", "order.read", "order.create")({ service: full, tenant: { ...tenant, scopes: full.scopes } } as unknown as Request, resFull as unknown as Response, (e?: unknown) => (out = e ?? "next"));
+  assert.equal(locals(resFull).ownResourcesOnly, undefined, "order.read → every order");
+
+  const none = key("NA_PISTA", organizationId, ["catalog.read"]);
+  requireReadOrOwn("orders.read", "order.read", "order.create")({ service: none, tenant: { ...tenant, scopes: none.scopes } } as unknown as Request, { locals: {} } as unknown as Response, (e?: unknown) => (out = e ?? "next"));
+  assert.equal((out as { statusCode?: number }).statusCode, 403);
+
+  const doc = buildOpenApiDocument() as { paths: Record<string, Record<string, Record<string, unknown>>> };
+  assert.deepEqual(doc.paths["/organizations/{organizationId}/orders"]?.post?.["x-na-pista-scope"], ["order.create", "order.write"]);
+  assert.deepEqual(doc.paths["/organizations/{organizationId}/orders/{orderId}"]?.get?.["x-na-pista-scope"], ["order.read", "order.create"]);
+  assert.deepEqual(doc.paths["/organizations/{organizationId}/customers"]?.post?.["x-na-pista-scope"], ["customer.create", "customer.write"]);
+});
