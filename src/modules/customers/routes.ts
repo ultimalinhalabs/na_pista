@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { idempotencyFor } from "../idempotency/service.js";
 import { requireModule } from "../../middleware/requireCapability.js";
 import { serviceScopeFor } from "../../authorization/serviceScopes.js";
 import { requireAuthorized } from "../../middleware/requireAuthorized.js";
@@ -8,7 +9,7 @@ import { paramString, validateUuidParams } from "../../shared/params.js";
 import { ok, okPage } from "../../shared/response.js";
 import { parseBody, parseQuery } from "../../shared/validate.js";
 import { createCustomerSchema, listCustomersQuerySchema, updateCustomerSchema } from "./schemas.js";
-import { archiveCustomer, createCustomer, getCustomerOrThrow, listCustomersPage, updateCustomerOrThrow } from "./service.js";
+import { archiveCustomer, createCustomerIdempotent, getCustomerOrThrow, listCustomersPage, updateCustomerOrThrow } from "./service.js";
 
 export const customersRouter = Router();
 validateUuidParams(customersRouter);
@@ -27,8 +28,10 @@ customersRouter.post(
   async (req, res, next) => {
     try {
       const body = parseBody(createCustomerSchema, req.body);
-      const customer = await createCustomer(req.tenant!, actorFromRequest(req), req.requestId, body);
-      ok(res, customer, 201);
+      const idempotency = idempotencyFor(req, "customers.create", { body });
+      const { result, replayed } = await createCustomerIdempotent(req.tenant!, actorFromRequest(req), req.requestId, body, idempotency);
+      if (replayed) res.set("Idempotent-Replayed", "true");
+      ok(res, result, 201);
     } catch (error) {
       next(error);
     }

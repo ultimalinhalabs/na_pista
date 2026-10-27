@@ -1,4 +1,5 @@
 import { db } from "../../db/index.js";
+import { runIdempotent, type IdempotencyRequest } from "../idempotency/service.js";
 import { recordUsage } from "../../platform/usage.js";
 import { recordAuditEvent } from "../audit/service.js";
 import { NotFoundError } from "../../shared/errors.js";
@@ -27,30 +28,48 @@ export async function createCustomer(
   requestId: string | undefined,
   input: { name: string; email?: string; phone?: string; notes?: string },
 ) {
-  const customer = await db.transaction(async (tx) => {
-    const row = await insertCustomer(tenant, input, tx);
-    // ADR-023/ADR-026: audited in the SAME transaction — an audit
-    // failure rolls back the customer row too (never a resource that
-    // exists without its creation being audited). No PII beyond the
-    // resource id goes into metadata (F21 brief §18) — name/email/phone/
-    // notes are never logged.
-    await recordAuditEvent(
-      {
-        organizationId: tenant.organizationId,
-        actorType: actor.type,
-        actorId: actor.id,
-        action: "customer.created",
-        resourceType: "customer",
-        resourceId: row.id,
-        requestId,
-      },
-      tx,
-    );
-    return row;
-  });
+  return (await createCustomerIdempotent(tenant, actor, requestId, input, undefined)).result;
+}
 
-  await recordUsage(tenant.organizationId, `customer.created:${customer.id}`, { resourceType: "customer", resourceId: customer.id }, requestId);
-  return customer;
+/** ADR-073: `createCustomer` with an optional Idempotency-Key (a replay re-reads the customer, records no usage). */
+export async function createCustomerIdempotent(
+  tenant: TenantContext,
+  actor: Actor,
+  requestId: string | undefined,
+  input: { name: string; email?: string; phone?: string; notes?: string },
+  idempotency: IdempotencyRequest | undefined,
+) {
+  const outcome = await runIdempotent(
+    { organizationId: tenant.organizationId, actor },
+    idempotency,
+    async (tx) => {
+      const row = await insertCustomer(tenant, input, tx);
+      // ADR-023/ADR-026: audited in the SAME transaction — an audit
+      // failure rolls back the customer row too (never a resource that
+      // exists without its creation being audited). No PII beyond the
+      // resource id goes into metadata (F21 brief §18) — name/email/phone/
+      // notes are never logged.
+      await recordAuditEvent(
+        {
+          organizationId: tenant.organizationId,
+          actorType: actor.type,
+          actorId: actor.id,
+          action: "customer.created",
+          resourceType: "customer",
+          resourceId: row.id,
+          requestId,
+        },
+        tx,
+      );
+      return row;
+    },
+    (customer) => customer.id,
+    (id) => getCustomerOrThrow(tenant, id),
+  );
+  if (!outcome.replayed) {
+    await recordUsage(tenant.organizationId, `customer.created:${outcome.result.id}`, { resourceType: "customer", resourceId: outcome.result.id }, requestId);
+  }
+  return outcome;
 }
 
 export async function listAllCustomers(tenant: TenantContext, filters: CustomerFilters) {

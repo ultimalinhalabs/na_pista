@@ -25,7 +25,7 @@ const ActiveArchived = z.enum(["ACTIVE", "ARCHIVED"]);
 
 export const ValidationIssueSchema = z
   .strictObject({
-    location: z.enum(["body", "query", "path"]).optional(),
+    location: z.enum(["body", "query", "path", "header"]).optional(),
     path: z.string().meta({ description: "Dotted path of the invalid field in the client's input (empty = the whole body)." }),
     message: z.string(),
   })

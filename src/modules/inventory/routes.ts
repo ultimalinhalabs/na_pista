@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { idempotencyFor } from "../idempotency/service.js";
 import { requireModule } from "../../middleware/requireCapability.js";
 import { requireAuthorized } from "../../middleware/requireAuthorized.js";
 import { requireTenantContext } from "../../tenancy/tenantContext.js";
@@ -9,7 +10,7 @@ import { roleHasPermission } from "../../authorization/permissions.js";
 import { ok, okPage } from "../../shared/response.js";
 import { parseBody, parseQuery } from "../../shared/validate.js";
 import { createMovementSchema, listInventoryQuerySchema, listMovementsQuerySchema } from "./schemas.js";
-import { createMovement, getBalanceOrThrow, listBalancesPage, listMovementsPage } from "./service.js";
+import { createMovementIdempotent, getBalanceOrThrow, listBalancesPage, listMovementsPage } from "./service.js";
 
 export const inventoryRouter = Router();
 validateUuidParams(inventoryRouter);
@@ -88,7 +89,10 @@ inventoryRouter.post(
         throw new ForbiddenError();
       }
 
-      const result = await createMovement(req.tenant!, actorFromRequest(req), req.requestId, paramString(req.params.productId)!, body);
+      const productId = paramString(req.params.productId)!;
+      const idempotency = idempotencyFor(req, "inventory.movements.create", { productId, body });
+      const { result, replayed } = await createMovementIdempotent(req.tenant!, actorFromRequest(req), req.requestId, productId, body, idempotency);
+      if (replayed) res.set("Idempotent-Replayed", "true");
       ok(res, result, 201);
     } catch (error) {
       next(error);

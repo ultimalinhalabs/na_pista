@@ -4,7 +4,7 @@
  * value, never schema internals.
  */
 export interface ValidationIssue {
-  location?: "body" | "query" | "path";
+  location?: "body" | "query" | "path" | "header";
   path: string;
   message: string;
 }
@@ -65,6 +65,20 @@ export class ConcurrentUpdateError extends AppError {
 
 export function isSerializationFailureError(error: unknown): boolean {
   return extractErrorCode(error) === "40001";
+}
+
+/** ADR-073: a service credential must send an Idempotency-Key on the creating endpoints a retry could duplicate. */
+export class IdempotencyKeyRequiredError extends AppError {
+  constructor(message = "This operation requires an Idempotency-Key header for service credentials") {
+    super(400, "IDEMPOTENCY_KEY_REQUIRED", message);
+  }
+}
+
+/** ADR-073: the Idempotency-Key was already used by this caller for a different request. */
+export class IdempotencyKeyReusedError extends AppError {
+  constructor(message = "This Idempotency-Key was already used for a different request") {
+    super(409, "IDEMPOTENCY_KEY_REUSED", message);
+  }
 }
 
 export class ConflictError extends AppError {

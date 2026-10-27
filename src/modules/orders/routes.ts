@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { requireModule } from "../../middleware/requireCapability.js";
+import { idempotencyFor } from "../idempotency/service.js";
 import { serviceScopeFor } from "../../authorization/serviceScopes.js";
 import { requireAuthorized } from "../../middleware/requireAuthorized.js";
 import { requireTenantContext } from "../../tenancy/tenantContext.js";
@@ -13,7 +14,7 @@ import {
   cancelOrder,
   completeOrder,
   confirmOrder,
-  createOrder,
+  createOrderIdempotent,
   getOrderOrThrow,
   listOrdersPage,
   removeOrderItemOrThrow,
@@ -33,8 +34,10 @@ ordersRouter.post(
   async (req, res, next) => {
     try {
       const body = parseBody(createOrderSchema, req.body);
-      const order = await createOrder(req.tenant!, actorFromRequest(req), req.requestId, body);
-      ok(res, order, 201);
+      const idempotency = idempotencyFor(req, "orders.create", { body });
+      const { result, replayed } = await createOrderIdempotent(req.tenant!, actorFromRequest(req), req.requestId, body, idempotency);
+      if (replayed) res.set("Idempotent-Replayed", "true");
+      ok(res, result, 201);
     } catch (error) {
       next(error);
     }

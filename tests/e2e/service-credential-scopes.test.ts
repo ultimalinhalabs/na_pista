@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import assert from "node:assert/strict";
 import test, { after, before } from "node:test";
 import { env } from "../../src/config/env.js";
@@ -23,7 +24,9 @@ async function mint(label: string, applicationKey: string, scopes: string[]) {
   assert.equal(r.status, 201, `${label}: ${applicationKey} [${scopes}]`);
   keys[label] = r.data!;
 }
-const np = (label: string, method: string, path: string, body?: unknown) => call(ctx.base, method, `/organizations/${orgA}${path}`, { token: keys[label]!.secret, body });
+// ADR-073: service-credential creates carry an Idempotency-Key (a fresh one per call here).
+const np = (label: string, method: string, path: string, body?: unknown) =>
+  call(ctx.base, method, `/organizations/${orgA}${path}`, { token: keys[label]!.secret, body, headers: method === "POST" ? { "idempotency-key": randomUUID() } : {} });
 
 before(async () => {
   ctx = await startApp();

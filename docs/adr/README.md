@@ -67,3 +67,4 @@ e [`../decisions.md`](../decisions.md) (F19 — todas fechadas com evidência de
 | [070](ADR-070-module-entitlements.md) | One Entitlement per Module (supersedes ADR-022 key reuse) | Accepted — implemented locally | Audit 2026-10-20 |
 | [071](ADR-071-order-lock-order-and-no-http-caching.md) | Stock rows locked in one global order; retryable 409 `CONCURRENT_UPDATE`; no HTTP caching | Accepted — implemented locally | Readiness audit 2026-10-22 |
 | [072](ADR-072-service-credential-application-and-scopes.md) | Service credentials: NA_PISTA keys only, per-resource scopes for personal data | Accepted — implemented locally | Credentials audit 2026-10-23 |
+| [073](ADR-073-idempotency-keys.md) | Idempotency-Key on orders, customers and stock movements | Accepted — implemented locally | P1-2, readiness audit 2026-10-22 |

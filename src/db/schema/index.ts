@@ -12,3 +12,4 @@ export * from "./professionalScheduleExceptions.js";
 export * from "./appointments.js";
 export * from "./auditEvents.js";
 export * from "./platformCredentials.js";
+export * from "./idempotencyKeys.js";
