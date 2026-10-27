@@ -2,10 +2,13 @@ import type { NextFunction, Request, Response } from "express";
 import { ZodError } from "zod";
 import {
   AppError,
+  ConcurrentUpdateError,
   extractErrorCode,
   isConnectionError,
+  isDeadlockError,
   isExclusionViolationError,
   isInvalidTextRepresentationError,
+  isSerializationFailureError,
   isUniqueViolationError,
   NotFoundError,
   PayloadTooLargeError,
@@ -35,6 +38,12 @@ function bodyParserError(error: unknown): AppError | undefined {
 export function errorHandler(error: unknown, req: Request, res: Response, _next: NextFunction) {
   const parseError = bodyParserError(error);
   if (parseError) error = parseError;
+  // A deadlock / serialization victim was rolled back as a whole: a retryable 409, never a 500. Domains that give it
+  // a meaning of their own (appointments → APPOINTMENT_CONFLICT) translate it before it gets here.
+  if (isDeadlockError(error) || isSerializationFailureError(error)) {
+    logger.info("http.request.concurrent_update", { requestId: req.requestId, code: extractErrorCode(error), path: req.path });
+    error = new ConcurrentUpdateError();
+  }
 
   if (isConnectionError(error)) {
     const mapped = new UpstreamUnavailableError("Na Pista's own database is unavailable");

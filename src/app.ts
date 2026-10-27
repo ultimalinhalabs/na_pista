@@ -26,6 +26,11 @@ import { ok } from "./shared/response.js";
 export function buildApp() {
   const app = express();
   app.disable("x-powered-by");
+  // No browser HTTP caching of API responses (per-caller bearer data) — same fix as UL Platform db7b5d9: with
+  // Express's default ETag a browser revalidates a response cached for ANOTHER same-site origin, Vercel strips the
+  // CORS headers from the 304 and the fetch fails (status 0). Harmless with one browser origin, breaks a second
+  // interface. No ETag → no 304 (readiness audit 2026-10-22, P1-4a).
+  app.set("etag", false);
   app.use(helmet());
   app.use(
     cors({
@@ -36,6 +41,10 @@ export function buildApp() {
   // ADR-053: request id first, so every response — including body-parse failures — carries X-Request-ID.
   app.use(requestId);
   app.use(express.json());
+  app.use("/v1", (_req, res, next) => {
+    res.set("Cache-Control", "no-store");
+    next();
+  });
 
   app.get("/v1/health", (_req, res) => ok(res, { status: "ok" }));
   // Readiness: the process can serve traffic (its database answers). Unauthenticated, no details.
