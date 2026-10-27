@@ -45,6 +45,15 @@ export interface Actor {
 
 type Tx = Pick<typeof db, "insert" | "select" | "update" | "delete">;
 
+/**
+ * Stock rows are always locked in ONE global order (product id), whatever the item order of the Order: two
+ * confirmations (or cancellations) touching the same products in opposite orders then queue instead of deadlocking
+ * (readiness audit 2026-10-22: 29/30 opposite-order rounds deadlocked, each victim a 500 after ~1 s).
+ */
+function inLockOrder<T extends { productId: string }>(items: T[]): T[] {
+  return [...items].sort((a, b) => (a.productId < b.productId ? -1 : a.productId > b.productId ? 1 : 0));
+}
+
 /** F23 brief §5/§36: a product must exist, be ACTIVE, and have a price to be added to an Order — enforced at the moment an item is created, not on every subsequent read. */
 async function resolveOrderableProduct(tenant: TenantContext, productId: string, executor: Tx) {
   const product = await getProduct(tenant, productId, executor);
@@ -286,7 +295,7 @@ export async function confirmOrder(tenant: TenantContext, actor: Actor, requestI
     // createMovement (ADR-028) — an item whose Product was archived after
     // being added to this DRAFT fails confirmation here with
     // PRODUCT_ARCHIVED (F23 brief §36), rolling back everything above.
-    for (const item of items) {
+    for (const item of inLockOrder(items)) {
       await createMovement(
         tenant,
         actor,
@@ -340,7 +349,7 @@ export async function cancelOrder(tenant: TenantContext, actor: Actor, requestId
 
     if (wasConfirmed) {
       const items = await listOrderItems(tenant, orderId, tx);
-      for (const item of items) {
+      for (const item of inLockOrder(items)) {
         await createMovement(
           tenant,
           actor,
